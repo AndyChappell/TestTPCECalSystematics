@@ -1,0 +1,38 @@
+package highland2Systematics/TestTPCECalSystematics
+version v0r0
+
+manager Andy Chappell <A.Chappell@warwick.ac.uk>
+author nd280-software@mailman.t2k.org
+
+branches cmt src doc app 
+
+use baseTrackerAnalysis * highland2
+
+# Build methods to include.
+document doxygen doxygen -group=documentation src/*.cpp src/*.h src/*.hxx src/*.cxx ../doc/*.dox
+
+# Build information used by packages that use this one.
+macro TestTPCECalSystematics_cppflags " -DTESTTPCECALSYSTEMATICS_USED"
+macro TestTPCECalSystematics_linkopts " -L$(TESTTPCECALSYSTEMATICSROOT)/$(TestTPCECalSystematics_tag) -lTestTPCECalSystematics "
+macro TestTPCECalSystematics_stamps " $(TESTTPCECALSYSTEMATICSROOT)/$(TestTPCECalSystematics_tag)/TestTPCECalSystematics.stamp"
+
+# The paths to find this library.
+path_remove PATH "$(TESTTPCECALSYSTEMATICSROOT)"
+path_prepend PATH "$(TESTTPCECALSYSTEMATICSROOT)/$(TestTPCECalSystematics_tag)"
+path_remove LD_LIBRARY_PATH "$(TESTTPCECALSYSTEMATICSROOT)"
+path_prepend LD_LIBRARY_PATH "$(TESTTPCECALSYSTEMATICSROOT)/$(TestTPCECalSystematics_tag)"
+path_remove DYLD_LIBRARY_PATH "" \
+	    Darwin	      "$(TESTTPCECALSYSTEMATICSROOT)"
+path_prepend DYLD_LIBRARY_PATH "" \
+	     Darwin	       "$(TESTTPCECALSYSTEMATICSROOT)/$(TestTPCECalSystematics_tag)"
+
+
+# The library to build
+library TestTPCECalSystematics *.cxx  ../dict/*.cxx
+
+application RunTestTPCECalSystematics ../app/RunTestTPCECalSystematics*.cxx
+
+# tests
+document doxygen doxygen -group=documentation ../scripts/* ../doc/*.dox
+
+
