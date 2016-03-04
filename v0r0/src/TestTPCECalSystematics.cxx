@@ -1,4 +1,5 @@
 #include "TestTPCECalSystematics.hxx"
+#include "TPCECalSelection.hxx"
 #include "FiducialVolumeDefinition.hxx"
 #include "Parameters.hxx"
 #include "CategoriesUtils.hxx"
@@ -9,6 +10,7 @@ TestTPCECalSystematics::TestTPCECalSystematics(AnalysisAlgorithm* ana) :
    baseTrackerAnalysis(ana)
 {
    // Add the package version (to be stored in the "config" tree)
+   std::cout << std::string(getenv("TESTTPCECALSYSTEMATICSROOT")) << std::endl;
    ND::versioning().AddPackage("TestTPCECalSystematics",
       anaUtils::GetSoftwareVersionFromPath(
          std::string(getenv("TESTTPCECALSYSTEMATICSROOT"))));
@@ -38,7 +40,7 @@ void TestTPCECalSystematics::DefineSelections()
    // - (Selection Name, Selection Title, Selection)
    // - The argument in the selection constructor (false) indicates the step
    //   sequence is not broken when a cut is not passed.
-/*   sel().AddSelection("kTPCECalSelection", "TPC/ECal selection",
+   sel().AddSelection("kTPCECalSelection", "TPC/ECal selection",
       new TPCECalSelection(false));
 
    // Disable any selections not enabled in the parameters file
@@ -46,7 +48,7 @@ void TestTPCECalSystematics::DefineSelections()
       "TestTPCECalSystematics.Selections.RunSelection"))
    {
       sel().DisableSelection("kTPCECalSelection");
-   }*/
+   }
 }
 
 void TestTPCECalSystematics::DefineCorrections()
@@ -104,6 +106,7 @@ void TestTPCECalSystematics::FillToyVarsInMicroTrees(bool addBase)
 
 bool TestTPCECalSystematics::CheckFillTruthTree(const AnaTrueVertex& vtx)
 {
+   return true;
 }
 
 void TestTPCECalSystematics::FillTruthTree(const AnaTrueVertex& vtx)

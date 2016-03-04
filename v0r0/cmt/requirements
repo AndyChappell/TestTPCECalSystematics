@@ -10,6 +10,7 @@ use baseTrackerAnalysis * highland2
 
 # Build methods to include.
 document doxygen doxygen -group=documentation src/*.cpp src/*.h src/*.hxx src/*.cxx ../doc/*.dox
+document rootcint dictionary *_LinkDef.h
 
 # Build information used by packages that use this one.
 macro TestTPCECalSystematics_cppflags " -DTESTTPCECALSYSTEMATICS_USED"
@@ -32,7 +33,8 @@ library TestTPCECalSystematics *.cxx  ../dict/*.cxx
 
 application RunTestTPCECalSystematics ../app/RunTestTPCECalSystematics*.cxx
 
-# tests
+# Documentation
 document doxygen doxygen -group=documentation ../scripts/* ../doc/*.dox
 
-
+# Setup the ROOT magic that means we can use the DrawingTools etc. without having to load any libraries.
+setup_script rootm_setup
