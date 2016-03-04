@@ -21,14 +21,22 @@ public:
    virtual void Reset()
    {
       fgdFVTracks.clear();
+      tpcQualityTracks.clear();
+      barrelTracks.clear();
    }
   
    virtual ~ToyBoxTPCECal()
    {
    }
 
-   /// Track with TPC that start in the FGD FV.
+   /// Tracks with more than 18 TPC nodes.
+   std::vector<AnaTrackB*> tpcQualityTracks;
+
+   /// Tracks with TPC that start in the FGD FV.
    std::vector<AnaTrackB*> fgdFVTracks;
+
+   /// Tracks which appear to enter the Barrel ECal.
+   std::vector<AnaTrackB*> barrelTracks;
 };
 
 /**
@@ -148,6 +156,30 @@ public:
    }
 };
 
+class Barrel
+{
+public:
+   static const float TpcXMin = -890;
+   static const float TpcXMax = +890;
+   static const float TpcYMin = -980;
+   static const float TpcYMax = +1085;
+   static const float TpcZMin = +600;
+   static const float TpcZMax = +2600;
+   static const float TpcAzimuthAbs = +160;
+   static const float TpcAngleMin = +35;
+};
+
+class DS
+{
+public:
+   static const float TpcXMin = -920;
+   static const float TpcXMax = +920;
+   static const float TpcYMin = -910;
+   static const float TpcYMax = +930;
+   static const float TpcZMin = +2665;
+   static const float TpcAngleMax = +40;
+};
+
 //---- Define all steps -------
 class FillSummaryAction_TPCECal: public StepBase
 {
@@ -157,7 +189,7 @@ public:
    StepBase* MakeClone(){ return new FillSummaryAction_TPCECal(); }
 };
 
-/// Leading tracks with good quality in FGD
+/// Finds leading tracks with good quality in FGD
 class FindLeadingTracksAction: public StepBase{
  public:
   using StepBase::Apply;
@@ -165,15 +197,7 @@ class FindLeadingTracksAction: public StepBase{
   StepBase* MakeClone(){return new FindLeadingTracksAction();}
 };
 
-/// Tracks starting in the FGD fiducial volume
-class FindTracksFGDFVAction: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FindTracksFGDFVAction(); }
-};
-
+/// Selects leading tracks with good quality in FGD
 class LeadingTracksCut: public StepBase
 {
    public:
@@ -182,12 +206,58 @@ class LeadingTracksCut: public StepBase
    StepBase* MakeClone(){ return new LeadingTracksCut(); }
 };
 
+/// Finds tracks starting in the FGD fiducial volume
+class FindTracksFGDFVAction: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FindTracksFGDFVAction(); }
+};
+
+/// Selects tracks starting in the FGD fiducial volume
 class FGDFVTracksCut: public StepBase
 {
    public:
    using StepBase::Apply;
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
    StepBase* MakeClone(){ return new FGDFVTracksCut(); }
+};
+
+/// Finds tracks with at least 18 nodes in the most downstream TPC
+class FindTPCQualityAction: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FindTPCQualityAction(); }
+};
+
+/// Selects tracks with at least 18 nodes in the most downstream TPC
+class TPCQualityCut: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new TPCQualityCut(); }
+};
+
+/// Finds tracks that appear to enter the barrel ECal
+class FindBarrelECalTracksAction: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FindBarrelECalTracksAction(); }
+};
+
+/// Selects tracks that appear to enter the barrel ECal
+class BarrelECalTracksCut: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new BarrelECalTracksCut(); }
 };
 
 #endif

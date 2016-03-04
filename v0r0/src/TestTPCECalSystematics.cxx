@@ -106,7 +106,10 @@ void TestTPCECalSystematics::FillToyVarsInMicroTrees(bool addBase)
 
 bool TestTPCECalSystematics::CheckFillTruthTree(const AnaTrueVertex& vtx)
 {
-   return true;
+   (void)vtx;
+
+   // Truth tree not needed
+   return false;
 }
 
 void TestTPCECalSystematics::FillTruthTree(const AnaTrueVertex& vtx)
