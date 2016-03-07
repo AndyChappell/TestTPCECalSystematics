@@ -23,6 +23,7 @@ public:
       fgdFVTracks.clear();
       tpcQualityTracks.clear();
       barrelTracks.clear();
+      downstreamTracks.clear();
    }
   
    virtual ~ToyBoxTPCECal()
@@ -37,6 +38,9 @@ public:
 
    /// Tracks which appear to enter the Barrel ECal.
    std::vector<AnaTrackB*> barrelTracks;
+
+   /// Tracks which appear to enter the Downstream ECal.
+   std::vector<AnaTrackB*> downstreamTracks;
 };
 
 /**
@@ -258,6 +262,24 @@ class BarrelECalTracksCut: public StepBase
    using StepBase::Apply;
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
    StepBase* MakeClone(){ return new BarrelECalTracksCut(); }
+};
+
+/// Finds tracks that appear to enter the DS ECal
+class FindDSECalTracksAction: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FindDSECalTracksAction(); }
+};
+
+/// Selects tracks that appear to enter the DS ECal
+class DSECalTracksCut: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new DSECalTracksCut(); }
 };
 
 #endif

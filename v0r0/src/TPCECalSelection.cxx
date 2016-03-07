@@ -32,26 +32,25 @@ void TPCECalSelection::DefineSteps()
    AddStep(StepBase::kAction, "Find FGD FV", new FindTracksFGDFVAction());
    AddStep(StepBase::kCut,  "FGD FV Cut", new FGDFVTracksCut());
 
-   // This will need a branch assignment when DS tracks are added
-   AddStep(StepBase::kAction, "Find Barrel tracks",
-      new FindBarrelECalTracksAction());
-   AddStep(StepBase::kCut,  "Barrel Cut", new BarrelECalTracksCut());
-
    // Add a split to the trunk with 2 branches.
-   //AddSplit(2);
+   AddSplit(2);
 
    // First branch is for Barrel ECal events.
-   //AddStep(0, StepBase::kCut, "1-track", new  OneTPCTrackCut());
+   AddStep(0, StepBase::kAction, "Find Barrel tracks",
+      new FindBarrelECalTracksAction());
+   AddStep(0, StepBase::kCut,  "Barrel Cut", new BarrelECalTracksCut());
 
    // Second branch is for Downstream ECal events.
-   //AddStep(1, StepBase::kCut, "2-tracks", new TwoTPCTracksCut());
+   AddStep(1, StepBase::kAction, "Find Downstream tracks",
+      new FindDSECalTracksAction());
+   AddStep(1, StepBase::kCut,  "Downstream Cut", new DSECalTracksCut());
 
    // Set the branch aliases to the two branches (this is mandatory)
    // -Branch number: one split => one number
    // -Name
    // -Alias number: to be used to refer to a branch in DrawingTools
    SetBranchAlias(0, "Barrel", 0);
-   //SetBranchAlias(1, "Downstream", 1);
+   SetBranchAlias(1, "Downstream", 1);
 
    // By default the preselection correspond to cuts 0-2. 
    // It means that if any of the three first cuts (0,1,2) is not passed 
@@ -228,5 +227,57 @@ bool BarrelECalTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalbox = static_cast<ToyBoxTPCECal*>(&box);
 
-   return (tpcECalbox->barrelTracks.size() > 0);
+   if(tpcECalbox->barrelTracks.size() > 0)
+   {
+      return true;
+   }
+
+   return false;
+}
+
+bool FindDSECalTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   for (unsigned int i = 0; i < tpcECalBox->fgdFVTracks.size(); i++)
+   {
+      AnaTrackB* track = tpcECalBox->fgdFVTracks[i];
+      TVector3 posEnd = utils::ArrayToTVector3(track->PositionEnd);
+      TVector3 dirEnd = utils::ArrayToTVector3(track->DirectionEnd);
+      
+      if (std::isnan(posEnd.X()) || std::isnan(dirEnd.X()) ||
+         !((posEnd.X() >= DS::TpcXMin && posEnd.X() <= DS::TpcXMax) &&
+         (posEnd.Y() >= DS::TpcYMin && posEnd.Y() <= DS::TpcYMax) &&
+         (posEnd.Z() >= DS::TpcZMin)))
+      {
+         continue;
+      }
+
+      TVector3 zdir(0.0, 0.0, 1.0);
+
+      double trackAngleFromZ = TMath::RadToDeg() * dirEnd.Unit().Angle(zdir);
+
+      if(!(trackAngleFromZ <= DS::TpcAngleMax))
+      {
+         continue;
+      }
+   
+      tpcECalBox->downstreamTracks.push_back(track);
+   }
+
+   return true;
+}
+
+bool DSECalTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void) event;
+
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   if(tpcECalBox->downstreamTracks.size() > 0)
+   {
+      return true;
+   }
+
+   return false;
 }
