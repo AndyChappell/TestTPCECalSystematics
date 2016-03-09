@@ -2,162 +2,59 @@
 #define TPCECalSelection_h
 
 #include "SelectionBase.hxx"
-#include "SubDetId.hxx"
+#include "Parameters.hxx"
 
-/**
-   The ToyBox for this selection
- */
+//---- Define an specific box for this selection -------
 class ToyBoxTPCECal: public ToyBoxB
 {
 public:
    ToyBoxTPCECal()
    {
-      // Initialize any variables for the selection.
+      isElectronLike = false;
+      isMuonLike = false;
+      isProtonLike = false;
+      entersBarrel = false;
+      entersDownstream = false;
+      fgdFVTracks.clear();
+      downstreamTracks.clear();
+      barrelTracks.clear();
+      selectedTrack = nullptr;
    }
 
-   /**
-      Resets the ToyBox variables.
-    */
    virtual void Reset()
    {
+      isElectronLike = false;
+      isMuonLike = false;
+      isProtonLike = false;
+      entersBarrel = false;
+      entersDownstream = false;
       fgdFVTracks.clear();
-      tpcQualityTracks.clear();
-      barrelTracks.clear();
       downstreamTracks.clear();
+      barrelTracks.clear();
+      selectedTrack = nullptr;
    }
   
-   virtual ~ToyBoxTPCECal()
-   {
-   }
+   virtual ~ToyBoxTPCECal(){ }
 
-   /// Tracks with more than 18 TPC nodes.
-   std::vector<AnaTrackB*> tpcQualityTracks;
+   /// Describes whether this track is thought to be an electron
+   bool isElectronLike;
+   /// Describes whether this track is thought to be a muon
+   bool isMuonLike;
+   /// Describes whether this track is thought to be a proton
+   bool isProtonLike;
+   /// Describes whether this track appears to enter the barrel ECal
+   bool entersBarrel;
+   /// Describes whether this track appears to enter the downstream ECal
+   bool entersDownstream;
 
    /// Tracks with TPC that start in the FGD FV.
    std::vector<AnaTrackB*> fgdFVTracks;
-
-   /// Tracks which appear to enter the Barrel ECal.
-   std::vector<AnaTrackB*> barrelTracks;
-
-   /// Tracks which appear to enter the Downstream ECal.
+   /// Tracks appearing to enter the downstream ECal.
    std::vector<AnaTrackB*> downstreamTracks;
-};
-
-/**
-   The TPC/ECal selection
- */
-class TPCECalSelection: public SelectionBase
-{
-public:
-   /**
-      Constructs a TPCECalSelection object.
-      \param forceBreak Whether or not to cut the sequence when a cut is not
-                        passed.
-    */
-   TPCECalSelection(bool forceBreak=true);
-   virtual ~TPCECalSelection(){}
-
-   //---- These are mandatory functions ----
-
-   /**
-      Defines the steps to be added to this selection.
-    */
-   void DefineSteps();
-
-   /**
-      Set the detector fiducial volume in which the selection is applied.
-      
-      If different branches use different fiducial volumes the branch can be
-      specified via SetDetectorFV(SubDetId::kFGD1, branch).
-    */
-   void DefineDetectorFV();
-
-   /**
-      Creates a proper instance of the box (ToyBoxB) to store all relevent
-      information to be passed from one step to the next.
-    */
-   ToyBoxB* MakeToyBox() { return new ToyBoxTPCECal(); }
-
-   /**
-      Fills the EventBox with the objects needed by this selection.
-
-      \param event The event from which the event box will be filled
-    */
-   void InitializeEvent(AnaEventB& event);
-
-   //----
-
-   //---- These are optional functions, needed by fitters but not by highland2
-   // analyses --------------
-
-   /**
-      Fill the event summary information, which is needed by the fitters.
-    */
-   bool FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]);
-
-   /**
-      Return the appropriate sample type (only needed by fitters)
-    */
-   nd280Samples::SampleEnum GetSampleEnum()
-   {
-      return nd280Samples::kFGD1NuMuCC0Pi;
-   }
-
-   //---- These are optional functions, but recommended to customize systematics
-   // and increase speed --------------
-   bool IsRelevantTrackForSystematic(const AnaEventB&, AnaTrackB*,
-      Int_t syst_index, Int_t branch=0) const
-   {
-      (void)syst_index;
-      (void)branch;
-
-      return true;
-   }
-   
-   bool IsRelevantTrueTrackForSystematic(const AnaEventB&, AnaTrueTrackB*,
-      Int_t syst_index, Int_t branch=0) const
-   {
-      (void)syst_index;
-      (void)branch;
-
-      return true;
-   }
-
-   bool IsRelevantTrackForSystematicInToy(const AnaEventB&, const ToyBoxB&,
-      AnaTrackB*, Int_t syst_index, Int_t branch=0) const
-   {
-      (void)syst_index;
-      (void)branch;
-
-      return true;
-   }
-
-   bool IsRelevantTrueTrackForSystematicInToy(const AnaEventB&, const ToyBoxB&,
-      AnaTrueTrackB*, Int_t syst_index, Int_t branch=0) const
-   {
-      (void)syst_index;
-      (void)branch;
-
-      return true;
-   }
-
-   bool IsRelevantSystematic(const AnaEventB&, const ToyBoxB&, Int_t syst_index,
-      Int_t branch=0) const
-   {
-      (void)syst_index;
-      (void)branch;
-
-      return true;
-   }
-
-   bool CheckRedoSelection(const AnaEventB&, const ToyBoxB& PreviousToyBox,
-      Int_t& redoFromStep)
-   {
-      (void)PreviousToyBox;
-      redoFromStep=0;
-
-      return true;
-   }
+   /// Tracks appearing to enter the barrel ECal.
+   std::vector<AnaTrackB*> barrelTracks;
+   /// The track to use - if more than one surviving track, pick highest momentum
+   AnaTrackB* selectedTrack;
 };
 
 class Barrel
@@ -184,16 +81,103 @@ public:
    static const float TpcAngleMax = +40;
 };
 
-//---- Define all steps -------
-class FillSummaryAction_TPCECal: public StepBase
-{
-public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;  
-   StepBase* MakeClone(){ return new FillSummaryAction_TPCECal(); }
+//---- Define the class for the new selection, which should inherit from SelectionBase or from another existing selection -------
+class TPCECalSelection: public SelectionBase{
+ public:
+  TPCECalSelection(bool forceBreak=true);
+  virtual ~TPCECalSelection(){}
+
+
+  ///========= These are mandatory functions ==================
+
+  /// In this method all steps are added to the selection
+  void DefineSteps();
+  
+  /// Set detector FV
+  void DefineDetectorFV();
+
+  /// Create a proper instance of the box (ToyBoxB) to store all relevant 
+  /// information to be passed from one step to the next
+  ToyBoxB* MakeToyBox() {return new ToyBoxTPCECal();}
+
+  /// Fill the EventBox with the objects needed by this selection
+  void InitializeEvent(AnaEventB& event);
+
+  //---- These are optional functions, needed by FITTERS but not by highland2 analyses --------------
+
+  bool FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]);
+  nd280Samples::SampleEnum GetSampleEnum(){return nd280Samples::kFGD1NuMuCC;}
 };
 
-/// Finds leading tracks with good quality in FGD
+///---- Define all steps -------
+class FillSummaryAction_TPCECal: public StepBase{
+public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;  
+  StepBase* MakeClone(){return new FillSummaryAction_TPCECal();}
+};
+
+class TrackQualityFiducialCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new TrackQualityFiducialCut();}
+};
+
+class TotalMultiplicityCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new TotalMultiplicityCut();}
+};
+
+class FindMuonPIDAction: public StepBase
+{
+public:
+   FindMuonPIDAction()
+   {
+      _prod5Cut = false;
+   }
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FindMuonPIDAction(); }
+private:
+   bool _prod5Cut;
+};
+
+class FindProtonPIDAction: public StepBase
+{
+public:
+   FindProtonPIDAction()
+   {
+   }
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FindProtonPIDAction(); }
+};
+
+class ExternalVetoCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new ExternalVetoCut();}
+};
+
+class DeltaZCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new DeltaZCut();}
+};
+
+class ExternalFGD1lastlayersCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new ExternalFGD1lastlayersCut();}
+};
+
+/// Leading tracks with good quality in FGD1
 class FindLeadingTracksAction: public StepBase{
  public:
   using StepBase::Apply;
@@ -201,85 +185,110 @@ class FindLeadingTracksAction: public StepBase{
   StepBase* MakeClone(){return new FindLeadingTracksAction();}
 };
 
-/// Selects leading tracks with good quality in FGD
-class LeadingTracksCut: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new LeadingTracksCut(); }
+/// Find the Vertex. For the moment it's just the Star position of the HM track
+class FindVertexAction: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new FindVertexAction();}
 };
 
-/// Finds tracks starting in the FGD fiducial volume
-class FindTracksFGDFVAction: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FindTracksFGDFVAction(); }
+
+class FindVetoTrackAction: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new FindVetoTrackAction();}
 };
 
-/// Selects tracks starting in the FGD fiducial volume
-class FGDFVTracksCut: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FGDFVTracksCut(); }
+class FindOOFVTrackAction: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new FindOOFVTrackAction();}
 };
 
-/// Finds tracks with at least 18 nodes in the most downstream TPC
-class FindTPCQualityAction: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FindTPCQualityAction(); }
+class OneTPCTrackCut: public StepBase{  
+    public:
+        using StepBase::Apply;
+        bool Apply(AnaEventB& event, ToyBoxB& box) const;
+        StepBase* MakeClone(){return new OneTPCTrackCut();}
 };
 
-/// Selects tracks with at least 18 nodes in the most downstream TPC
-class TPCQualityCut: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new TPCQualityCut(); }
+class TwoTPCTracksCut: public StepBase{  
+    public:
+        using StepBase::Apply;
+        bool Apply(AnaEventB& event, ToyBoxB& box) const;
+        StepBase* MakeClone(){return new TwoTPCTracksCut();}
 };
 
-/// Finds tracks that appear to enter the barrel ECal
-class FindBarrelECalTracksAction: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FindBarrelECalTracksAction(); }
+class MoreThanTwoTPCTracksCut: public StepBase{  
+    public:
+        using StepBase::Apply;
+        bool Apply(AnaEventB& event, ToyBoxB& box) const;
+        StepBase* MakeClone(){return new MoreThanTwoTPCTracksCut();}
 };
 
-/// Selects tracks that appear to enter the barrel ECal
-class BarrelECalTracksCut: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new BarrelECalTracksCut(); }
+class MoreThanTwoLongTPCTracksCut: public StepBase{  
+    public:
+        using StepBase::Apply;
+        bool Apply(AnaEventB& event, ToyBoxB& box) const;
+        StepBase* MakeClone(){return new MoreThanTwoLongTPCTracksCut();}
 };
 
-/// Finds tracks that appear to enter the DS ECal
-class FindDSECalTracksAction: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FindDSECalTracksAction(); }
+class FindLongTPCTracks: public StepBase{
+    public:
+        using StepBase::Apply;
+        bool Apply(AnaEventB& event, ToyBoxB& box) const;  
+        StepBase* MakeClone(){return new FindLongTPCTracks();}
 };
 
-/// Selects tracks that appear to enter the DS ECal
-class DSECalTracksCut: public StepBase
+class FindDownstreamTracksAction: public StepBase
 {
    public:
    using StepBase::Apply;
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new DSECalTracksCut(); }
+   StepBase* MakeClone(){ return new FindDownstreamTracksAction(); }
+};
+
+class DownstreamTracksCut: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new DownstreamTracksCut(); }
+};
+
+class FindBarrelTracksAction: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FindBarrelTracksAction(); }
+};
+
+class BarrelTracksCut: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new BarrelTracksCut(); }
+};
+
+class FindFGDFVTracksAction: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FindFGDFVTracksAction(); }
+};
+
+class SelectTrackAction: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new SelectTrackAction(); }
 };
 
 #endif
