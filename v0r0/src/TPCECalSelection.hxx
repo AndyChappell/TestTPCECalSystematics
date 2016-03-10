@@ -283,6 +283,14 @@ class FindFGDFVTracksAction: public StepBase
    StepBase* MakeClone(){ return new FindFGDFVTracksAction(); }
 };
 
+class FGDFVTracksCut: public StepBase
+{
+   public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new FGDFVTracksCut(); }
+};
+
 class SelectTrackAction: public StepBase
 {
    public:

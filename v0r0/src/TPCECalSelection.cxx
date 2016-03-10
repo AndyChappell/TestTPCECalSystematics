@@ -31,6 +31,7 @@ void TPCECalSelection::DefineSteps(){
       new FindLeadingTracksAction());
    AddStep(StepBase::kAction, "find FGD FV tracks",
       new FindFGDFVTracksAction());
+   AddStep(StepBase::kCut, "FGD FV tracks cut", new FGDFVTracksCut());
    AddStep(StepBase::kAction, "Find downstream tracks",
       new FindDownstreamTracksAction());
    AddStep(StepBase::kAction, "Find barrel tracks",
@@ -278,6 +279,13 @@ bool FindFGDFVTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
    }
 
    return true;
+}
+
+bool FGDFVTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   return tpcECalBox->fgdFVTracks.size() > 0;
 }
 
 bool FindDownstreamTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const

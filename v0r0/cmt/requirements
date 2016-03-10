@@ -1,7 +1,7 @@
 package highland2Systematics/TPCECalSystematicsAnalysis
-version v1r15
+version v0r0
 
-manager Anselmo Cervera <anselmo.cervera@cern.ch>
+manager Andy Chappell <A.Chappell@warwick.ac.uk>
 author nd280-software@mailman.t2k.org
 
 branches cmt src doc app 
@@ -10,6 +10,7 @@ use baseTrackerAnalysis * highland2
 
 # Build methods to include.
 document doxygen doxygen -group=documentation src/*.cpp src/*.h src/*.hxx src/*.cxx ../doc/*.dox
+document rootcint dictionary *_LinkDef.h
 
 # Build information used by packages that use this one.
 macro TPCECalSystematicsAnalysis_cppflags " -DTPCECALSYSTEMATICSANALYSIS_USED"
@@ -30,9 +31,13 @@ path_prepend DYLD_LIBRARY_PATH "" \
 # The library to build
 library TPCECalSystematicsAnalysis *.cxx  ../dict/*.cxx
 
+# A separate library for the custom DrawingTools
+library DrawingToolsTPCECal DrawingToolsTPCECal.cxx  ../dict/*.cxx
+
 application RunTPCECalSystematicsAnalysis ../app/RunTPCECalSystematicsAnalysis*.cxx
 
 # tests
 document doxygen doxygen -group=documentation ../scripts/* ../doc/*.dox
 
-
+# Setup the ROOT magic that means we can use the DrawingTools etc. without having to load any libraries.
+setup_script rootm_setup

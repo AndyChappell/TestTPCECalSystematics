@@ -1,8 +1,0 @@
---- Cut levels --------
- < TestTPCECalSystematics.MinAccumLevelToSave = 2 >   // minimum accum level to save the event
-
---- Selections --------
- < TestTPCECalSystematics.Selections.RunSelection = 1 >	
-
---- Systematics --------
- < TestTPCECalSystematics.Systematics.EnableTPCECalSystematics = 0 >
