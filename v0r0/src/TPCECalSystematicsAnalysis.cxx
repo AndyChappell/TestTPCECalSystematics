@@ -5,6 +5,7 @@
 #include "CategoriesUtils.hxx"
 #include "BasicUtils.hxx"
 #include "baseToyMaker.hxx"
+#include "SubDetId.hxx"
 
 TPCECalSystematicsAnalysis::TPCECalSystematicsAnalysis(AnalysisAlgorithm* ana) : baseTrackerAnalysis(ana) {
   // Add the package version (to be stored in the "config" tree)
@@ -57,10 +58,18 @@ void TPCECalSystematicsAnalysis::DefineMicroTrees(bool addBase)
    }
 
    // --- Single variables -------
-   AddVarI(output(), isMuonLike, "is muon candidate");
-   AddVarI(output(), isProtonLike, "is proton candidate");
    AddVarI(output(), entersBarrel, "appears to enter the barrel ECal");
    AddVarI(output(), entersDownstream, "appears to enter the downstream ECal");
+   AddVarI(output(), ecalDetector, "Number identifying the part of the ECal that"
+      "the track appears to enter. 9 == DS, 5 - 8 == BR");
+   AddVarI(output(), isMuonLike, "is muon candidate");
+   AddVarI(output(), isProtonLike, "is proton candidate");
+   AddVarF(output(), charge, "Reconstructed charge of the selected track");
+   AddVarF(output(), momentum, "Reconstructed momentum of the selected track");
+
+   // --- Vectir variables -------
+
+   AddVar3VF(output(), direction, "End direction of the selected track");
 }
 
 void TPCECalSystematicsAnalysis::DefineTruthTree(){
@@ -83,13 +92,33 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
    const ToyBoxTPCECal* tpcECalBox = static_cast<const ToyBoxTPCECal*>(&box());
 
    // Muon candidate variables
-   if (tpcECalBox->MainTrack)
+   AnaTrackB* track = tpcECalBox->selectedTrack;
+   if (track)
    {
-      output().FillVar(isMuonLike, tpcECalBox->isMuonLike);
-      output().FillVar(isProtonLike, tpcECalBox->isProtonLike);
       output().FillVar(entersBarrel, tpcECalBox->entersBarrel);
       output().FillVar(entersDownstream, tpcECalBox->entersDownstream);
-   }  
+
+      int det = SubDetId::kInvalid;
+      if(IsDSECal(track->Detector))
+      {  // DS ECal
+         det = SubDetId::kDSECAL;
+      }
+      else if(IsBarrelECal(track->Detector))
+      {  // Barrel ECal
+         det = SubDetId::kTECAL;
+      }
+
+      output().FillVar(ecalDetector, det);
+      output().FillVar(isMuonLike, tpcECalBox->isMuonLike);
+      output().FillVar(isProtonLike, tpcECalBox->isProtonLike);
+
+      AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
+         anaUtils::GetTPCBackSegment(track));
+
+      output().FillVar(charge, backTpc->Charge);
+      output().FillVar(momentum, backTpc->Momentum);
+      output().FillVectorVarFromArray(direction, backTpc->DirectionEnd, 3);
+   }   
 }
 
 void TPCECalSystematicsAnalysis::FillToyVarsInMicroTrees(bool addBase){
@@ -116,3 +145,19 @@ void TPCECalSystematicsAnalysis::FillCategories(){
   // For the muon candidate
   anaUtils::FillCategories(_event, static_cast<AnaTrack*>(box().MainTrack),"", SubDetId::kFGD1);
 }
+
+bool TPCECalSystematicsAnalysis::IsBarrelECal(const unsigned long detector)
+{
+   bool barrelLeft = (detector & (1 << SubDetId::kLeftTECAL)) ? true : false;
+   bool barrelRight = (detector & (1 << SubDetId::kRightTECAL)) ? true : false;
+   bool barrelTop = (detector & (1 << SubDetId::kTopTECAL)) ? true : false;
+   bool barrelBottom = (detector & (1 << SubDetId::kBottomTECAL)) ? true : false;
+      
+   return (barrelLeft || barrelRight || barrelTop || barrelBottom);
+}
+
+bool TPCECalSystematicsAnalysis::IsDSECal(const unsigned long detector)
+{   
+   return (detector & (1 << SubDetId::kDSECAL)) ? true : false;
+}
+

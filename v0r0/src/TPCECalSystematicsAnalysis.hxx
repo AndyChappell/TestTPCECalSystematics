@@ -31,19 +31,46 @@ class TPCECalSystematicsAnalysis: public baseTrackerAnalysis {
 
 public:
 
-  /* Here we create an enum with all variables we want to add to the trees, starting at the last variable it was added by used analyses, 
-     in this case the last of the nueCCAnalysis
+   /*
+      Create an enum with all the variables we want to add to the trees,
+      starting with the final value used by the analysis that we build on, in
+      this case baseTrackerAnalysis
    */
+   enum enumStandardMicroTrees_TPCECalSystematicsAnalysis
+   {
+      entersBarrel=enumStandardMicroTreesLast_baseTrackerAnalysis + 1,
+      entersDownstream,
+      ecalDetector,
+      isMuonLike,
+      isProtonLike,
+      charge,
+      momentum,
+      direction,
+      truemu_mom,
+      truemu_costheta,
+      enumStandardMicroTreesLast_TPCECalSystematicsAnalysis
+   };
 
-  enum enumStandardMicroTrees_TPCECalSystematicsAnalysis{
-    entersBarrel=enumStandardMicroTreesLast_baseTrackerAnalysis + 1,
-    entersDownstream,
-    isMuonLike,
-    isProtonLike,
-    truemu_mom,
-    truemu_costheta,
-    enumStandardMicroTreesLast_TPCECalSystematicsAnalysis
-  };  
+private:
+   /**
+      Extracts the bits that identify parts of the barrel ECal and checks if
+      they are set.
+      \param detector   The bitfield containing all of the subdetectors
+                        intersected by a track. This value comes from the field
+                        AnaTrackB::Detector.
+      \return  True if the track intersects part of the barrel ECal, False
+               otherwise.
+   */
+   bool IsBarrelECal(const unsigned long detector);
+
+   /**
+      Extracts the bit that identifies the DS ECal and checks if it is set.
+      \param detector   The bitfield containing all of the subdetectors
+                        intersected by a track. This value comes from the field
+                        AnaTrackB::Detector.
+      \return  True if the track intersects the DS ECal, False otherwise.
+   */
+   bool IsDSECal(const unsigned long detector);
 };
 
 #endif
