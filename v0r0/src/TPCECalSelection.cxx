@@ -45,9 +45,11 @@ void TPCECalSelection::DefineSteps(){
 
    // First branch is for downstream ECal tracks
    AddStep(0, StepBase::kCut, "Downstream tracks cut", new DownstreamTracksCut());
+   AddStep(0, StepBase::kCut, "Muon PID cut", new MuonPIDCut());
 
    // Second branch is for barrel ECal tracks
-   AddStep(1, StepBase::kCut, "Barrel tracks cut", new BarrelTracksCut());  
+   AddStep(1, StepBase::kCut, "Barrel tracks cut", new BarrelTracksCut());
+   AddStep(1, StepBase::kCut, "Muon PID cut", new MuonPIDCut());
 
    // Set the branch aliases to the two branches (this is mandatory)
    SetBranchAlias(0, "Downstream ECal", 0);
@@ -102,8 +104,19 @@ bool FindMuonPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
    }
    else
    {
-      tpcECalBox->isMuonLike = cutUtils::MuonPIDCut(
-         *(tpcECalBox->selectedTrack), _prod5Cut);
+      AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
+         anaUtils::GetTPCBackSegment(tpcECalBox->selectedTrack));
+
+      Float_t pullElectron = backTpc->Pullele;
+      Float_t pullMuon = backTpc->Pullmu;
+      
+      if((pullMuon > -2 && pullMuon < 2) &&
+         (pullElectron > 2 || pullElectron < -1) &&
+         (cutUtils::MuonPIDCut(*(tpcECalBox->selectedTrack), _prod5Cut) ||
+         cutUtils::AntiMuonPIDCut(*(tpcECalBox->selectedTrack))))
+      {
+         tpcECalBox->isMuonLike = true;
+      }
    }
 
    return true;
@@ -442,3 +455,13 @@ bool SelectTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const
 
    return true;
 }
+
+bool MuonPIDCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void) event;
+
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   return tpcECalBox->isMuonLike;
+}
+

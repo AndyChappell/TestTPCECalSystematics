@@ -299,4 +299,18 @@ class SelectTrackAction: public StepBase
    StepBase* MakeClone(){ return new SelectTrackAction(); }
 };
 
+class MuonPIDCut: public StepBase
+{
+public:
+   MuonPIDCut()
+   {
+      _prod5Cut = false;
+   }
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){ return new MuonPIDCut(); }
+private:
+   bool _prod5Cut;
+};
+
 #endif
