@@ -25,31 +25,40 @@ void TPCECalSelection::DefineSteps(){
 
    // Cuts must be added in the right order
    // last "true" means the step sequence is broken if cut is not passed (default is "false")
-   AddStep(StepBase::kCut, "event quality", new EventQualityCut(), true);
-   AddStep(StepBase::kCut, "> 0 tracks ", new TotalMultiplicityCut(), true);  
-   AddStep(StepBase::kAction, "find leading tracks",
+   AddStep(StepBase::kCut, "Evt Qual", new EventQualityCut(), true);
+   AddStep(StepBase::kCut, "> 0 Tracks", new TotalMultiplicityCut(), true);  
+   AddStep(StepBase::kAction, "Leading Tracks",
       new FindLeadingTracksAction());
-   AddStep(StepBase::kAction, "find FGD FV tracks",
+
+   AddStep(StepBase::kAction, "Find Vertex", new FindVertexAction());  
+   AddStep(StepBase::kCut, "Qual + Fid", new TrackQualityFiducialCut(), true);
+   AddStep(StepBase::kCut, "Neg Mul", new NegativeMultiplicityCut());
+   AddStep(StepBase::kAction, "Find Veto Track", new FindVetoTrackAction());
+   AddStep(StepBase::kCut, "Veto", new ExternalVetoCut());
+   AddStep(StepBase::kAction, "Find OOFV Track", new FindOOFVTrackAction());
+   AddStep(StepBase::kCut, "External FGD1", new ExternalFGD1lastlayersCut());
+      
+/*   AddStep(StepBase::kAction, "Find FGD FV Track",
       new FindFGDFVTracksAction());
-   AddStep(StepBase::kCut, "FGD FV tracks cut", new FGDFVTracksCut());
-   AddStep(StepBase::kAction, "Find downstream tracks",
+   AddStep(StepBase::kCut, "FGD FV Track", new FGDFVTracksCut());*/
+   AddStep(StepBase::kAction, "Find DS Track",
       new FindDownstreamTracksAction());
-   AddStep(StepBase::kAction, "Find barrel tracks",
+   AddStep(StepBase::kAction, "Find Barrel Track",
       new FindBarrelTracksAction());
-   AddStep(StepBase::kAction, "Select the track", new SelectTrackAction());
-   AddStep(StepBase::kAction, "Find muon PID", new FindMuonPIDAction());
-   AddStep(StepBase::kAction, "Find proton PID", new FindProtonPIDAction());
+   AddStep(StepBase::kAction, "Select Track", new SelectTrackAction());
+   AddStep(StepBase::kAction, "Find Muon PID", new FindMuonPIDAction());
+   AddStep(StepBase::kAction, "Find Proton PID", new FindProtonPIDAction());
 
    // Add a split to the trunk with 2 branches.
    AddSplit(2);
 
    // First branch is for downstream ECal tracks
-   AddStep(0, StepBase::kCut, "Downstream tracks cut", new DownstreamTracksCut());
-   AddStep(0, StepBase::kCut, "Muon PID cut", new MuonPIDCut());
-
+   AddStep(0, StepBase::kCut, "Muon PID", new MuonPIDCut());
+   AddStep(0, StepBase::kCut, "DS Track", new DownstreamTracksCut());
+   
    // Second branch is for barrel ECal tracks
-   AddStep(1, StepBase::kCut, "Barrel tracks cut", new BarrelTracksCut());
-   AddStep(1, StepBase::kCut, "Muon PID cut", new MuonPIDCut());
+   AddStep(1, StepBase::kCut, "Muon PID", new MuonPIDCut());
+   AddStep(1, StepBase::kCut, "Barrel Track", new BarrelTracksCut());
 
    // Set the branch aliases to the two branches (this is mandatory)
    SetBranchAlias(0, "Downstream ECal", 0);
@@ -79,6 +88,24 @@ bool TotalMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
   // Check we have at least one reconstructed track in the TPC
   EventBoxB* EventBox = event.EventBoxes[AnaEventB::kEventBoxTracker];
   return (EventBox->nTracksInGroup[EventBoxTracker::kTracksWithTPC]>0);
+}
+
+//**************************************************
+bool NegativeMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
+//**************************************************
+
+  (void)event;
+
+  return (box.HMNtrack==box.HMtrack);
+}
+
+//**************************************************
+bool PositiveMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
+//**************************************************
+
+  (void)event;
+
+  return (box.HMPtrack==box.HMtrack);
 }
 
 //**************************************************
@@ -231,31 +258,6 @@ bool FindOOFVTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const{
     return true;
 }
 
-//*********************************************************************
-bool OneTPCTrackCut::Apply(AnaEventB& event, ToyBoxB& box) const{
-//*********************************************************************
-
-    (void)event;
-
-    if (box.nNegativeTPCtracks+box.nPositiveTPCtracks==1)
-      return true;
-    else
-      return false; 
-}
-
-
-//*********************************************************************
-bool TwoTPCTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const{
-//*********************************************************************
-
-    (void)event;
-
-    if (box.nNegativeTPCtracks+box.nPositiveTPCtracks==2)
-      return true;
-    else
-      return false; 
-}
-
 //**************************************************
 void TPCECalSelection::InitializeEvent(AnaEventB& event){
 //**************************************************
@@ -270,24 +272,16 @@ void TPCECalSelection::InitializeEvent(AnaEventB& event){
   boxUtils::FillTrajsChargedInFGDAndNoTPC(event, GetDetectorFV());
 }
 
+/*
 bool FindFGDFVTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
 {
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   for (int i = 0; i < tpcECalBox->nNegativeTPCtracks; i++)
+   if(tpcECalBox->MainTrack)
    {
-      AnaTrackB* track = tpcECalBox->NegativeTPCtracks[i];
-      if (cutUtils::FiducialCut(*track, SubDetId::kFGD))
+      if (cutUtils::FiducialCut(*tpcECalBox->MainTrack, SubDetId::kFGD))
       {
-         tpcECalBox->fgdFVTracks.push_back(track);
-      }
-   }
-   for (int i = 0; i < tpcECalBox->nPositiveTPCtracks; i++)
-   {
-      AnaTrackB* track = tpcECalBox->PositiveTPCtracks[i];
-      if (cutUtils::FiducialCut(*track, SubDetId::kFGD))
-      {
-         tpcECalBox->fgdFVTracks.push_back(track);
+         tpcECalBox->fgdFVTracks.push_back(tpcECalBox->MainTrack);
       }
    }
 
@@ -300,6 +294,7 @@ bool FGDFVTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
 
    return tpcECalBox->fgdFVTracks.size() > 0;
 }
+* */
 
 bool FindDownstreamTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
 {
@@ -307,25 +302,23 @@ bool FindDownstreamTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   std::vector<AnaTrackB*> tracks = tpcECalBox->fgdFVTracks;
-
-   for (unsigned int i = 0; i < tracks.size(); i++)
+   if(tpcECalBox->MainTrack)
    {
-      AnaTrackB* track = tracks[i];
+      AnaTrackB* track = tpcECalBox->MainTrack;
       AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
          anaUtils::GetTPCBackSegment(track));
       TVector3 pos = utils::ArrayToTVector3(backTpc->PositionEnd);
 
       if (!cutUtils::TPCTrackQualityCut(*backTpc))
       {
-         continue;
+         return true;
       }
       if(std::isnan(pos.X()) || !(
          (pos.X() >= DS::TpcXMin && pos.X() <= DS::TpcXMax) &&
          (pos.Y() >= DS::TpcYMin && pos.Y() <= DS::TpcYMax) &&
          (pos.Z() >= DS::TpcZMin)))
       {
-         continue;
+         return true;
       }
 
       TVector3 dir = utils::ArrayToTVector3(backTpc->DirectionEnd);
@@ -333,10 +326,10 @@ bool FindDownstreamTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
       double tpcBackAngleFromZ = TMath::RadToDeg() * dir.Unit().Angle(zdir);
       if(std::isnan(dir.X()) || !(tpcBackAngleFromZ <= DS::TpcAngleMax))
       {
-         continue;
+         return true;
       }
 
-      tpcECalBox->downstreamTracks.push_back(track);
+      tpcECalBox->downstreamTrack = track;
    }
 
    return true;
@@ -348,7 +341,7 @@ bool DownstreamTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   return tpcECalBox->downstreamTracks.size() > 0;
+   return (tpcECalBox->downstreamTrack);
 }
 
 bool FindBarrelTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
@@ -357,25 +350,23 @@ bool FindBarrelTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   std::vector<AnaTrackB*> tracks = tpcECalBox->fgdFVTracks;
-
-   for (unsigned int i = 0; i < tracks.size(); i++)
+   if(tpcECalBox->MainTrack)
    {
-      AnaTrackB* track = tracks[i];
+      AnaTrackB* track = tpcECalBox->MainTrack;
       AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
          anaUtils::GetTPCBackSegment(track));
       TVector3 pos = utils::ArrayToTVector3(backTpc->PositionEnd);
 
       if (!cutUtils::TPCTrackQualityCut(*backTpc))
       {
-         continue;
+         return true;
       }
       if(std::isnan(pos.X()) || !(
          ((pos.X() < Barrel::TpcXMin) || (pos.X() > Barrel::TpcXMax) ||
          (pos.Y() < Barrel::TpcYMin) || (pos.Y() > Barrel::TpcYMax)) &&
          (pos.Z() >= Barrel::TpcZMin && pos.Z() <= Barrel::TpcZMax)))
       {
-         continue;
+         return true;
       }
 
       TVector3 dir = utils::ArrayToTVector3(backTpc->DirectionEnd);
@@ -398,10 +389,10 @@ bool FindBarrelTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
          (tpcBackAngleFromZ >= Barrel::TpcAngleMin) &&
          (fabs(tpcBackAzimuth) <= Barrel::TpcAzimuthAbs)))
       {
-         continue;
+         return true;
       }
 
-      tpcECalBox->barrelTracks.push_back(track);
+      tpcECalBox->barrelTrack = track;
    }
 
    return true;
@@ -413,7 +404,7 @@ bool BarrelTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   return tpcECalBox->barrelTracks.size();
+   return tpcECalBox->barrelTrack;
 }
 
 bool SelectTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const
@@ -422,35 +413,15 @@ bool SelectTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   if(tpcECalBox->barrelTracks.size() > 0)
+   if(tpcECalBox->barrelTrack)
    {
       tpcECalBox->entersBarrel = true;
-
-      Float_t highestMomentum = 0;
-      for(unsigned int i = 0; i < tpcECalBox->barrelTracks.size(); i++)
-      {
-         AnaTrackB* track = tpcECalBox->barrelTracks[i];
-         if(track->Momentum > highestMomentum)
-         {
-            highestMomentum = track->Momentum;
-            tpcECalBox->selectedTrack = track;
-         }
-      }
+      tpcECalBox->selectedTrack = tpcECalBox->barrelTrack;
    }
-   else if(tpcECalBox->downstreamTracks.size() > 0)
+   else if(tpcECalBox->downstreamTrack)
    {
       tpcECalBox->entersDownstream = true;
-
-      Float_t highestMomentum = 0;
-      for(unsigned int i = 0; i < tpcECalBox->downstreamTracks.size(); i++)
-      {
-         AnaTrackB* track = tpcECalBox->downstreamTracks[i];
-         if(track->Momentum > highestMomentum)
-         {
-            highestMomentum = track->Momentum;
-            tpcECalBox->selectedTrack = track;
-         }
-      }
+      tpcECalBox->selectedTrack = tpcECalBox->downstreamTrack;
    }
 
    return true;

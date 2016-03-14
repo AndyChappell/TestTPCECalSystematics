@@ -15,9 +15,8 @@ public:
       isProtonLike = false;
       entersBarrel = false;
       entersDownstream = false;
-      fgdFVTracks.clear();
-      downstreamTracks.clear();
-      barrelTracks.clear();
+      downstreamTrack = nullptr;
+      barrelTrack = nullptr;
       selectedTrack = nullptr;
    }
 
@@ -28,9 +27,8 @@ public:
       isProtonLike = false;
       entersBarrel = false;
       entersDownstream = false;
-      fgdFVTracks.clear();
-      downstreamTracks.clear();
-      barrelTracks.clear();
+      downstreamTrack = nullptr;
+      barrelTrack = nullptr;
       selectedTrack = nullptr;
    }
   
@@ -47,12 +45,10 @@ public:
    /// Describes whether this track appears to enter the downstream ECal
    bool entersDownstream;
 
-   /// Tracks with TPC that start in the FGD FV.
-   std::vector<AnaTrackB*> fgdFVTracks;
-   /// Tracks appearing to enter the downstream ECal.
-   std::vector<AnaTrackB*> downstreamTracks;
-   /// Tracks appearing to enter the barrel ECal.
-   std::vector<AnaTrackB*> barrelTracks;
+   /// Track appearing to enter the downstream ECal.
+   AnaTrackB* downstreamTrack;
+   /// Track appearing to enter the barrel ECal.
+   AnaTrackB* barrelTrack;
    /// The track to use - if more than one surviving track, pick highest momentum
    AnaTrackB* selectedTrack;
 };
@@ -129,6 +125,20 @@ class TotalMultiplicityCut: public StepBase{
   using StepBase::Apply;
   bool Apply(AnaEventB& event, ToyBoxB& box) const;
   StepBase* MakeClone(){return new TotalMultiplicityCut();}
+};
+
+class NegativeMultiplicityCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new NegativeMultiplicityCut();}
+};
+
+class PositiveMultiplicityCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new PositiveMultiplicityCut();}
 };
 
 class FindMuonPIDAction: public StepBase
@@ -208,34 +218,6 @@ class FindOOFVTrackAction: public StepBase{
   StepBase* MakeClone(){return new FindOOFVTrackAction();}
 };
 
-class OneTPCTrackCut: public StepBase{  
-    public:
-        using StepBase::Apply;
-        bool Apply(AnaEventB& event, ToyBoxB& box) const;
-        StepBase* MakeClone(){return new OneTPCTrackCut();}
-};
-
-class TwoTPCTracksCut: public StepBase{  
-    public:
-        using StepBase::Apply;
-        bool Apply(AnaEventB& event, ToyBoxB& box) const;
-        StepBase* MakeClone(){return new TwoTPCTracksCut();}
-};
-
-class MoreThanTwoTPCTracksCut: public StepBase{  
-    public:
-        using StepBase::Apply;
-        bool Apply(AnaEventB& event, ToyBoxB& box) const;
-        StepBase* MakeClone(){return new MoreThanTwoTPCTracksCut();}
-};
-
-class MoreThanTwoLongTPCTracksCut: public StepBase{  
-    public:
-        using StepBase::Apply;
-        bool Apply(AnaEventB& event, ToyBoxB& box) const;
-        StepBase* MakeClone(){return new MoreThanTwoLongTPCTracksCut();}
-};
-
 class FindLongTPCTracks: public StepBase{
     public:
         using StepBase::Apply;
@@ -274,7 +256,7 @@ class BarrelTracksCut: public StepBase
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
    StepBase* MakeClone(){ return new BarrelTracksCut(); }
 };
-
+/*
 class FindFGDFVTracksAction: public StepBase
 {
    public:
@@ -290,7 +272,7 @@ class FGDFVTracksCut: public StepBase
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
    StepBase* MakeClone(){ return new FGDFVTracksCut(); }
 };
-
+*/
 class SelectTrackAction: public StepBase
 {
    public:
