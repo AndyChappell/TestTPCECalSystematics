@@ -1,6 +1,7 @@
 #ifndef TPCECalSelection_h
 #define TPCECalSelection_h
 
+#include <list>
 #include "SelectionBase.hxx"
 #include "Parameters.hxx"
 
@@ -12,24 +13,30 @@ public:
    {
       isElectronLike = false;
       isMuonLike = false;
+      isAntiMuonLike = false;
       isProtonLike = false;
       entersBarrel = false;
       entersDownstream = false;
       downstreamTrack = nullptr;
       barrelTrack = nullptr;
       selectedTrack = nullptr;
+      negativeTracks.clear();
+      positiveTracks.clear();
    }
 
    virtual void Reset()
    {
       isElectronLike = false;
       isMuonLike = false;
+      isAntiMuonLike = false;
       isProtonLike = false;
       entersBarrel = false;
       entersDownstream = false;
       downstreamTrack = nullptr;
       barrelTrack = nullptr;
       selectedTrack = nullptr;
+      negativeTracks.clear();
+      positiveTracks.clear();
    }
   
    virtual ~ToyBoxTPCECal(){ }
@@ -38,6 +45,8 @@ public:
    bool isElectronLike;
    /// Describes whether this track is thought to be a muon
    bool isMuonLike;
+   /// Describes whether this track is thought to be an antimuon
+   bool isAntiMuonLike;
    /// Describes whether this track is thought to be a proton
    bool isProtonLike;
    /// Describes whether this track appears to enter the barrel ECal
@@ -45,11 +54,16 @@ public:
    /// Describes whether this track appears to enter the downstream ECal
    bool entersDownstream;
 
+   /// All negative tracks
+   std::list<AnaTrackB*> negativeTracks;
+   /// All positive tracks
+   std::list<AnaTrackB*> positiveTracks;
+
    /// Track appearing to enter the downstream ECal.
    AnaTrackB* downstreamTrack;
    /// Track appearing to enter the barrel ECal.
    AnaTrackB* barrelTrack;
-   /// The track to use - if more than one surviving track, pick highest momentum
+   /// The selected track.
    AnaTrackB* selectedTrack;
 };
 
@@ -77,35 +91,52 @@ public:
    static const float TpcAngleMax = +40;
 };
 
-//---- Define the class for the new selection, which should inherit from SelectionBase or from another existing selection -------
-class TPCECalSelection: public SelectionBase{
- public:
-  TPCECalSelection(bool forceBreak=true);
-  virtual ~TPCECalSelection(){}
-
-
-  ///========= These are mandatory functions ==================
-
-  /// In this method all steps are added to the selection
-  void DefineSteps();
-  
-  /// Set detector FV
-  void DefineDetectorFV();
-
-  /// Create a proper instance of the box (ToyBoxB) to store all relevant 
-  /// information to be passed from one step to the next
-  ToyBoxB* MakeToyBox() {return new ToyBoxTPCECal();}
-
-  /// Fill the EventBox with the objects needed by this selection
-  void InitializeEvent(AnaEventB& event);
-
-  //---- These are optional functions, needed by FITTERS but not by highland2 analyses --------------
-
-  bool FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]);
-  nd280Samples::SampleEnum GetSampleEnum(){return nd280Samples::kFGD1NuMuCC;}
+class TPC
+{
+public:
+   static const int MinimumNodes = 19;
 };
 
 ///---- Define all steps -------
+class NegativeMultiplicityCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new NegativeMultiplicityCut();}
+};
+
+/// Negative leading tracks with good quality in FGD1
+class FindNegativeLeadingTracksAction: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new FindNegativeLeadingTracksAction();}
+};
+
+/// Highest momentum negative track
+class FindHighestMomentumNegativeTrackAction: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new FindHighestMomentumNegativeTrackAction();}
+};
+
+/// Highest momentum positive track
+class FindHighestMomentumPositiveTrackAction: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new FindHighestMomentumPositiveTrackAction();}
+};
+
+/// Positive leading tracks with good quality in FGD1
+class FindPositiveLeadingTracksAction: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new FindPositiveLeadingTracksAction();}
+};
+
 class FillSummaryAction_TPCECal: public StepBase{
 public:
   using StepBase::Apply;
@@ -120,50 +151,18 @@ class TrackQualityFiducialCut: public StepBase{
   StepBase* MakeClone(){return new TrackQualityFiducialCut();}
 };
 
+class TPCTrackQualityCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new TPCTrackQualityCut();}
+};
+
 class TotalMultiplicityCut: public StepBase{
  public:
   using StepBase::Apply;
   bool Apply(AnaEventB& event, ToyBoxB& box) const;
   StepBase* MakeClone(){return new TotalMultiplicityCut();}
-};
-
-class NegativeMultiplicityCut: public StepBase{
- public:
-  using StepBase::Apply;
-  bool Apply(AnaEventB& event, ToyBoxB& box) const;
-  StepBase* MakeClone(){return new NegativeMultiplicityCut();}
-};
-
-class PositiveMultiplicityCut: public StepBase{
- public:
-  using StepBase::Apply;
-  bool Apply(AnaEventB& event, ToyBoxB& box) const;
-  StepBase* MakeClone(){return new PositiveMultiplicityCut();}
-};
-
-class FindMuonPIDAction: public StepBase
-{
-public:
-   FindMuonPIDAction()
-   {
-      _prod5Cut = false;
-   }
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FindMuonPIDAction(); }
-private:
-   bool _prod5Cut;
-};
-
-class FindProtonPIDAction: public StepBase
-{
-public:
-   FindProtonPIDAction()
-   {
-   }
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FindProtonPIDAction(); }
 };
 
 class ExternalVetoCut: public StepBase{
@@ -173,26 +172,11 @@ class ExternalVetoCut: public StepBase{
   StepBase* MakeClone(){return new ExternalVetoCut();}
 };
 
-class DeltaZCut: public StepBase{
- public:
-  using StepBase::Apply;
-  bool Apply(AnaEventB& event, ToyBoxB& box) const;
-  StepBase* MakeClone(){return new DeltaZCut();}
-};
-
 class ExternalFGD1lastlayersCut: public StepBase{
  public:
   using StepBase::Apply;
   bool Apply(AnaEventB& event, ToyBoxB& box) const;
   StepBase* MakeClone(){return new ExternalFGD1lastlayersCut();}
-};
-
-/// Leading tracks with good quality in FGD1
-class FindLeadingTracksAction: public StepBase{
- public:
-  using StepBase::Apply;
-  bool Apply(AnaEventB& event, ToyBoxB& box) const;
-  StepBase* MakeClone(){return new FindLeadingTracksAction();}
 };
 
 /// Find the Vertex. For the moment it's just the Star position of the HM track
@@ -202,7 +186,6 @@ class FindVertexAction: public StepBase{
   bool Apply(AnaEventB& event, ToyBoxB& box) const;
   StepBase* MakeClone(){return new FindVertexAction();}
 };
-
 
 class FindVetoTrackAction: public StepBase{
  public:
@@ -216,13 +199,6 @@ class FindOOFVTrackAction: public StepBase{
   using StepBase::Apply;
   bool Apply(AnaEventB& event, ToyBoxB& box) const;
   StepBase* MakeClone(){return new FindOOFVTrackAction();}
-};
-
-class FindLongTPCTracks: public StepBase{
-    public:
-        using StepBase::Apply;
-        bool Apply(AnaEventB& event, ToyBoxB& box) const;  
-        StepBase* MakeClone(){return new FindLongTPCTracks();}
 };
 
 class FindDownstreamTracksAction: public StepBase
@@ -256,43 +232,13 @@ class BarrelTracksCut: public StepBase
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
    StepBase* MakeClone(){ return new BarrelTracksCut(); }
 };
-/*
-class FindFGDFVTracksAction: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FindFGDFVTracksAction(); }
-};
 
-class FGDFVTracksCut: public StepBase
-{
-   public:
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new FGDFVTracksCut(); }
-};
-*/
 class SelectTrackAction: public StepBase
 {
    public:
    using StepBase::Apply;
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
    StepBase* MakeClone(){ return new SelectTrackAction(); }
-};
-
-class MuonPIDCut: public StepBase
-{
-public:
-   MuonPIDCut()
-   {
-      _prod5Cut = false;
-   }
-   using StepBase::Apply;
-   bool Apply(AnaEventB& event, ToyBoxB& box) const;
-   StepBase* MakeClone(){ return new MuonPIDCut(); }
-private:
-   bool _prod5Cut;
 };
 
 #endif

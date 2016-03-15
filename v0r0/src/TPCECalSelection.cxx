@@ -5,296 +5,222 @@
 #include "EventBoxUtils.hxx"
 #include "baseAnalysis.hxx"
 
-//********************************************************************
-TPCECalSelection::TPCECalSelection(bool forceBreak): SelectionBase(forceBreak) {
-//********************************************************************
+bool NegativeMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
 
+   return (box.HMNtrack==box.HMtrack);
 }
 
-//********************************************************************
-void TPCECalSelection::DefineDetectorFV(){
-//********************************************************************
-
-  // Set the detector Fiducial Volume in which the selection is applied. This is now a mandatory method
-  SetDetectorFV(SubDetId::kFGD1);
-}
-
-//********************************************************************
-void TPCECalSelection::DefineSteps(){
-//********************************************************************
-
-   // Cuts must be added in the right order
-   // last "true" means the step sequence is broken if cut is not passed (default is "false")
-   AddStep(StepBase::kCut, "Evt Qual", new EventQualityCut(), true);
-   AddStep(StepBase::kCut, "> 0 Tracks", new TotalMultiplicityCut(), true);  
-   AddStep(StepBase::kAction, "Leading Tracks",
-      new FindLeadingTracksAction());
-
-   AddStep(StepBase::kAction, "Find Vertex", new FindVertexAction());  
-   AddStep(StepBase::kCut, "Qual + Fid", new TrackQualityFiducialCut(), true);
-   AddStep(StepBase::kCut, "Neg Mul", new NegativeMultiplicityCut());
-   AddStep(StepBase::kAction, "Find Veto Track", new FindVetoTrackAction());
-   AddStep(StepBase::kCut, "Veto", new ExternalVetoCut());
-   AddStep(StepBase::kAction, "Find OOFV Track", new FindOOFVTrackAction());
-   AddStep(StepBase::kCut, "External FGD1", new ExternalFGD1lastlayersCut());
-      
-/*   AddStep(StepBase::kAction, "Find FGD FV Track",
-      new FindFGDFVTracksAction());
-   AddStep(StepBase::kCut, "FGD FV Track", new FGDFVTracksCut());*/
-   AddStep(StepBase::kAction, "Find DS Track",
-      new FindDownstreamTracksAction());
-   AddStep(StepBase::kAction, "Find Barrel Track",
-      new FindBarrelTracksAction());
-   AddStep(StepBase::kAction, "Select Track", new SelectTrackAction());
-   AddStep(StepBase::kAction, "Find Muon PID", new FindMuonPIDAction());
-   AddStep(StepBase::kAction, "Find Proton PID", new FindProtonPIDAction());
-
-   // Add a split to the trunk with 2 branches.
-   AddSplit(2);
-
-   // First branch is for downstream ECal tracks
-   AddStep(0, StepBase::kCut, "Muon PID", new MuonPIDCut());
-   AddStep(0, StepBase::kCut, "DS Track", new DownstreamTracksCut());
+bool FindNegativeLeadingTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
    
-   // Second branch is for barrel ECal tracks
-   AddStep(1, StepBase::kCut, "Muon PID", new MuonPIDCut());
-   AddStep(1, StepBase::kCut, "Barrel Track", new BarrelTracksCut());
+   // Find leading tracks with good quality and only in FGD FV
+   cutUtils::FindLeadingTracks(event, *tpcECalBox);
 
-   // Set the branch aliases to the two branches (this is mandatory)
-   SetBranchAlias(0, "Downstream ECal", 0);
-   SetBranchAlias(1, "Barrel ECal", 1);
+   for(int i = 0; i < tpcECalBox->nNegativeTPCtracks; ++i)
+   {
+      tpcECalBox->negativeTracks.push_back(tpcECalBox->NegativeTPCtracks[i]);
+   }
 
-   // By default the preselection correspond to cuts 0-2. 
-   // It means that if any of the three first cuts (0,1,2) is not passed 
-   // the loop over toys will be broken ===> A single toy will be run
-   SetPreSelectionAccumLevel(2);
+   return tpcECalBox->negativeTracks.size() > 0;
 }
 
-//********************************************************************
-bool TPCECalSelection::FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]){
-//********************************************************************
+bool FindPositiveLeadingTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+   
+   // Find leading tracks with good quality and only in FGD FV
+   cutUtils::FindLeadingTracks(event, *tpcECalBox);
 
-    if(allCutsPassed[0]){
-        event.Summary->EventSample = nd280Samples::kFGD1NuMuCC;
-    }
-    return (event.Summary->EventSample != nd280Samples::kUnassigned);
+   for(int i = 0; i < tpcECalBox->nPositiveTPCtracks; ++i)
+   {
+      tpcECalBox->positiveTracks.push_back(tpcECalBox->PositiveTPCtracks[i]);
+   }
+
+   return true;
 }
 
-//**************************************************
+bool FindHighestMomentumNegativeTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   Float_t highestMomentum = 0;
+   AnaTrackB* hmTrack = nullptr;
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->negativeTracks.begin();
+   while(i != tpcECalBox->negativeTracks.end())
+   {
+      if((*i)->Momentum > highestMomentum)
+      {
+         highestMomentum = (*i)->Momentum;
+         hmTrack = *i;
+      }
+      i++;
+   }
+   tpcECalBox->negativeTracks.clear();
+   if(hmTrack)
+   {
+      tpcECalBox->negativeTracks.push_back(hmTrack);
+   }
+
+   return true;
+}
+
+bool FindHighestMomentumPositiveTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   Float_t highestMomentum = 0;
+   AnaTrackB* hmTrack = nullptr;
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->positiveTracks.begin();
+   while(i != tpcECalBox->positiveTracks.end())
+   {
+      if((*i)->Momentum > highestMomentum)
+      {
+         highestMomentum = (*i)->Momentum;
+         hmTrack = *i;
+      }
+      i++;
+   }
+   tpcECalBox->positiveTracks.clear();
+   if(hmTrack)
+   {
+      tpcECalBox->positiveTracks.push_back(hmTrack);
+   }
+
+   return true;
+}
+
 bool TotalMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
-//**************************************************
 
-  (void)box;
-  // Check we have at least one reconstructed track in the TPC
-  EventBoxB* EventBox = event.EventBoxes[AnaEventB::kEventBoxTracker];
-  return (EventBox->nTracksInGroup[EventBoxTracker::kTracksWithTPC]>0);
+   (void)box;
+   // Check we have at least one reconstructed track in the TPC
+
+   EventBoxB* EventBox = event.EventBoxes[AnaEventB::kEventBoxTracker];
+   bool passes = (EventBox->nTracksInGroup[EventBoxTracker::kTracksWithTPC]>0);
+
+   return passes;
 }
 
-//**************************************************
-bool NegativeMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
-//**************************************************
+bool TPCTrackQualityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
 
-  (void)event;
-
-  return (box.HMNtrack==box.HMtrack);
-}
-
-//**************************************************
-bool PositiveMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
-//**************************************************
-
-  (void)event;
-
-  return (box.HMPtrack==box.HMtrack);
-}
-
-//**************************************************
-bool TrackQualityFiducialCut::Apply(AnaEventB& event, ToyBoxB& box) const{
-//**************************************************
-
-  (void)event;
-  return (box.Vertex);
-}
-
-bool FindMuonPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
-{
    (void)event;
-
-   ToyBoxTPCECal* tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
-   if(!tpcECalBox->selectedTrack)
-   {
-      tpcECalBox->isMuonLike = false;
-   }
-   else if(tpcECalBox->selectedTrack->Momentum < 0)
-   {
-      tpcECalBox->isMuonLike = false;
-   }
-   else
-   {
-      AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
-         anaUtils::GetTPCBackSegment(tpcECalBox->selectedTrack));
-
-      Float_t pullElectron = backTpc->Pullele;
-      Float_t pullMuon = backTpc->Pullmu;
-      
-      if((pullMuon > -2 && pullMuon < 2) &&
-         (pullElectron > 2 || pullElectron < -1) &&
-         (cutUtils::MuonPIDCut(*(tpcECalBox->selectedTrack), _prod5Cut) ||
-         cutUtils::AntiMuonPIDCut(*(tpcECalBox->selectedTrack))))
-      {
-         tpcECalBox->isMuonLike = true;
-      }
-   }
-
-   return true;
-}
-
-bool FindProtonPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
-{
-   (void)event;
-
-   ToyBoxTPCECal* tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
-   if(!tpcECalBox->selectedTrack)
-   {
-      tpcECalBox->isProtonLike = false;
-   }
-   else if(tpcECalBox->selectedTrack->Momentum < 0)
-   {
-      tpcECalBox->isProtonLike = false;
-   }
-   else
-   {
-      tpcECalBox->isProtonLike = cutUtils::ProtonPIDCut(
-         *(tpcECalBox->selectedTrack));
-   }
-
-   return true;
-}
-
-//********************************************************************
-bool ExternalVetoCut::Apply(AnaEventB& event, ToyBoxB& box) const{
-//********************************************************************
-
-    (void)event;
-    if (!box.MainTrack) return false;
-    return cutUtils::ExternalVetoCut(*(box.MainTrack),box.VetoTrack);
-}
-
-//********************************************************************
-bool ExternalFGD1lastlayersCut::Apply(AnaEventB& event, ToyBoxB& box) const{
-//********************************************************************
-
-    (void)event;
-    /// Reject external background from the last 2 layers of FGD1
-    if (!box.MainTrack) return false;  
-    if (!box.OOFVtrack) return true;
-    return (box.MainTrack->PositionStart[2]<425.);
-}
-
-//**************************************************
-bool FindVertexAction::Apply(AnaEventB& event, ToyBoxB& box) const{
-//**************************************************
-
-    (void)event;
-
-    // reset the vertex 
-    box.Vertex = NULL;
-
-    if (!box.MainTrack) return false;
-
-    box.Vertex = new AnaVertexB();
-    utils::CreateArray(box.Vertex->Tracks, 1);
-
-    box.Vertex->nTracks = 0;
-    box.Vertex->Tracks[box.Vertex->nTracks++] = box.MainTrack;
-
-    for(int i = 0; i < 4; ++i){
-        box.Vertex->Position[i] = box.MainTrack->PositionStart[i];
-    }
-    if(  box.MainTrack->TrueTrack ) 
-        box.Vertex->TrueVertex = box.MainTrack->TrueTrack->TrueVertex;
-    return true;
-}
-
-//********************************************************************
-bool FillSummaryAction_TPCECal::Apply(AnaEventB& event, ToyBoxB& box) const{
-//********************************************************************
-    if(!box.HMNtrack) return 1;
-
-    event.Summary->LeptonCandidate[nd280Samples::kFGD1NuMuCC] = box.HMNtrack;
-    for(int i = 0; i < 4; ++i){
-        event.Summary->VertexPosition[nd280Samples::kFGD1NuMuCC][i] = box.HMNtrack->PositionStart[i];
-    }
-    if(box.HMNtrack->TrueTrack) event.Summary->TrueVertex[nd280Samples::kFGD1NuMuCC] = box.HMNtrack->TrueTrack->TrueVertex;
-
-    return true;
-}
-
-//**************************************************
-bool FindLeadingTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const{
-//**************************************************
-
-    // Find leading tracks with good quality and only in FGD FV
-    cutUtils::FindLeadingTracks(event,box);
-
-    // For this selection the main track is the HMN track
-    box.MainTrack = box.HMNtrack;
-    return true;
-}
-
-//**************************************************
-bool FindVetoTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const{
-//**************************************************
-
-    box.VetoTrack = cutUtils::FindVetoTrack(event, *(box.MainTrack));  
-    return true;
-}
-
-//**************************************************
-bool FindOOFVTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const{
-//**************************************************
-
-    box.OOFVtrack = cutUtils::FindFGDOOFVtrack(event, *(box.MainTrack), box.DetectorFV);
-    return true;
-}
-
-//**************************************************
-void TPCECalSelection::InitializeEvent(AnaEventB& event){
-//**************************************************
-
-  // Create the appropriate EventBox if it does not exist yet
-  if (!event.EventBoxes[AnaEventB::kEventBoxTracker])
-    event.EventBoxes[AnaEventB::kEventBoxTracker] = new EventBoxTracker();
   
-  boxUtils::FillTracksWithTPC(event,             GetDetectorFV());
-  boxUtils::FillTracksWithFGD(event,             GetDetectorFV());
-  boxUtils::FillTrajsChargedInTPC(event);
-  boxUtils::FillTrajsChargedInFGDAndNoTPC(event, GetDetectorFV());
-}
-
-/*
-bool FindFGDFVTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
-{
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
-
-   if(tpcECalBox->MainTrack)
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->negativeTracks.begin();
+   while(i != tpcECalBox->negativeTracks.end())
    {
-      if (cutUtils::FiducialCut(*tpcECalBox->MainTrack, SubDetId::kFGD))
+      AnaTpcTrack* track = static_cast<AnaTpcTrack*>(
+         anaUtils::GetTPCBackSegment(*i));
+
+      if(track->NHits < TPC::MinimumNodes)
       {
-         tpcECalBox->fgdFVTracks.push_back(tpcECalBox->MainTrack);
+         tpcECalBox->negativeTracks.erase(i++);
+      }
+      else
+      {
+         i++;
       }
    }
 
-   return true;
+   i = tpcECalBox->positiveTracks.begin();
+   while(i != tpcECalBox->positiveTracks.end())
+   {
+      AnaTpcTrack* track = static_cast<AnaTpcTrack*>(
+         anaUtils::GetTPCBackSegment(*i));
+
+      if(track->NHits < TPC::MinimumNodes)
+      {
+         tpcECalBox->positiveTracks.erase(i++);
+      }
+      else
+      {
+         i++;
+      }
+   }
+
+   return (tpcECalBox->negativeTracks.size() > 0 ||
+      tpcECalBox->positiveTracks.size() > 0);
 }
 
-bool FGDFVTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+bool ExternalVetoCut::Apply(AnaEventB& event, ToyBoxB& box) const
 {
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->negativeTracks.begin();
+   while(i != tpcECalBox->negativeTracks.end())
+   {
+      AnaTrackB* track = *i;
 
-   return tpcECalBox->fgdFVTracks.size() > 0;
+      if(!cutUtils::ExternalVetoCut(*track,
+         cutUtils::FindVetoTrack(event, *track)))
+      {
+         tpcECalBox->negativeTracks.erase(i++);
+      }
+      else
+      {
+         i++;
+      }
+   }
+
+   i = tpcECalBox->positiveTracks.begin();
+   while(i != tpcECalBox->positiveTracks.end())
+   {
+      AnaTrackB* track = *i;
+
+      if(!cutUtils::ExternalVetoCut(*track,
+         cutUtils::FindVetoTrack(event, *track)))
+      {
+         tpcECalBox->positiveTracks.erase(i++);
+      }
+      else
+      {
+         i++;
+      }
+   }
+
+   return (tpcECalBox->negativeTracks.size() > 0 ||
+      tpcECalBox->positiveTracks.size() > 0);
 }
-* */
+
+bool ExternalFGD1lastlayersCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->negativeTracks.begin();
+   while(i != tpcECalBox->negativeTracks.end())
+   {
+      AnaTrackB* track = *i;
+
+      if(cutUtils::FindFGDOOFVtrack(event, *track, tpcECalBox->DetectorFV) ||
+         !(track->PositionStart[2] < 425))
+      {
+         tpcECalBox->negativeTracks.erase(i++);
+      }
+      else
+      {
+         i++;
+      }
+   }
+
+   i = tpcECalBox->positiveTracks.begin();
+   while(i != tpcECalBox->positiveTracks.end())
+   {
+      AnaTrackB* track = *i;
+
+      if(cutUtils::FindFGDOOFVtrack(event, *track, tpcECalBox->DetectorFV) ||
+         !(track->PositionStart[2] < 425))
+      {
+         tpcECalBox->positiveTracks.erase(i++);
+      }
+      else
+      {
+         i++;
+      }
+   }
+
+   return (tpcECalBox->negativeTracks.size() > 0 ||
+      tpcECalBox->positiveTracks.size() > 0);
+}
 
 bool FindDownstreamTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
 {
@@ -302,23 +228,24 @@ bool FindDownstreamTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   if(tpcECalBox->MainTrack)
+   int count = 0;
+   Float_t highestMomentum = 0;
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->negativeTracks.begin();
+   while(i != tpcECalBox->negativeTracks.end())
    {
-      AnaTrackB* track = tpcECalBox->MainTrack;
+      AnaTrackB* track = *i;
+
       AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
          anaUtils::GetTPCBackSegment(track));
       TVector3 pos = utils::ArrayToTVector3(backTpc->PositionEnd);
 
-      if (!cutUtils::TPCTrackQualityCut(*backTpc))
-      {
-         return true;
-      }
       if(std::isnan(pos.X()) || !(
          (pos.X() >= DS::TpcXMin && pos.X() <= DS::TpcXMax) &&
          (pos.Y() >= DS::TpcYMin && pos.Y() <= DS::TpcYMax) &&
          (pos.Z() >= DS::TpcZMin)))
       {
-         return true;
+         i++;
+         continue;
       }
 
       TVector3 dir = utils::ArrayToTVector3(backTpc->DirectionEnd);
@@ -326,10 +253,52 @@ bool FindDownstreamTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
       double tpcBackAngleFromZ = TMath::RadToDeg() * dir.Unit().Angle(zdir);
       if(std::isnan(dir.X()) || !(tpcBackAngleFromZ <= DS::TpcAngleMax))
       {
-         return true;
+         i++;
+         continue;
       }
 
-      tpcECalBox->downstreamTrack = track;
+      if(track->Momentum > highestMomentum)
+      {
+         highestMomentum = track->Momentum;
+         tpcECalBox->downstreamTrack = track;
+         count++;
+      }
+      i++;
+   }
+
+   i = tpcECalBox->positiveTracks.begin();
+   while(i != tpcECalBox->positiveTracks.end())
+   {
+      AnaTrackB* track = *i;
+
+      AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
+         anaUtils::GetTPCBackSegment(track));
+      TVector3 pos = utils::ArrayToTVector3(backTpc->PositionEnd);
+
+      if(std::isnan(pos.X()) || !(
+         (pos.X() >= DS::TpcXMin && pos.X() <= DS::TpcXMax) &&
+         (pos.Y() >= DS::TpcYMin && pos.Y() <= DS::TpcYMax) &&
+         (pos.Z() >= DS::TpcZMin)))
+      {
+         i++;
+         continue;
+      }
+
+      TVector3 dir = utils::ArrayToTVector3(backTpc->DirectionEnd);
+      TVector3 zdir(0.0, 0.0, 1.0);
+      double tpcBackAngleFromZ = TMath::RadToDeg() * dir.Unit().Angle(zdir);
+      if(std::isnan(dir.X()) || !(tpcBackAngleFromZ <= DS::TpcAngleMax))
+      {
+         i++;
+         continue;
+      }
+
+      if(track->Momentum > highestMomentum)
+      {
+         highestMomentum = track->Momentum;
+         tpcECalBox->downstreamTrack = track;
+      }
+      i++;
    }
 
    return true;
@@ -341,7 +310,7 @@ bool DownstreamTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   return (tpcECalBox->downstreamTrack);
+   return tpcECalBox->downstreamTrack;
 }
 
 bool FindBarrelTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
@@ -350,23 +319,23 @@ bool FindBarrelTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   if(tpcECalBox->MainTrack)
+   int count = 0;
+   Float_t highestMomentum = 0;
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->negativeTracks.begin();
+   while(i != tpcECalBox->negativeTracks.end())
    {
-      AnaTrackB* track = tpcECalBox->MainTrack;
+      AnaTrackB* track = *i;
       AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
          anaUtils::GetTPCBackSegment(track));
       TVector3 pos = utils::ArrayToTVector3(backTpc->PositionEnd);
 
-      if (!cutUtils::TPCTrackQualityCut(*backTpc))
-      {
-         return true;
-      }
       if(std::isnan(pos.X()) || !(
          ((pos.X() < Barrel::TpcXMin) || (pos.X() > Barrel::TpcXMax) ||
          (pos.Y() < Barrel::TpcYMin) || (pos.Y() > Barrel::TpcYMax)) &&
          (pos.Z() >= Barrel::TpcZMin && pos.Z() <= Barrel::TpcZMax)))
       {
-         return true;
+         i++;
+         continue;
       }
 
       TVector3 dir = utils::ArrayToTVector3(backTpc->DirectionEnd);
@@ -389,10 +358,66 @@ bool FindBarrelTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
          (tpcBackAngleFromZ >= Barrel::TpcAngleMin) &&
          (fabs(tpcBackAzimuth) <= Barrel::TpcAzimuthAbs)))
       {
-         return true;
+         i++;
+         continue;
       }
 
-      tpcECalBox->barrelTrack = track;
+      if(track->Momentum > highestMomentum)
+      {
+         highestMomentum = track->Momentum;
+         tpcECalBox->barrelTrack = track;
+         count++;
+      }
+      i++;
+   }
+
+   i = tpcECalBox->positiveTracks.begin();
+   while(i != tpcECalBox->positiveTracks.end())
+   {
+      AnaTrackB* track = *i;
+      AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
+         anaUtils::GetTPCBackSegment(track));
+      TVector3 pos = utils::ArrayToTVector3(backTpc->PositionEnd);
+
+      if(std::isnan(pos.X()) || !(
+         ((pos.X() < Barrel::TpcXMin) || (pos.X() > Barrel::TpcXMax) ||
+         (pos.Y() < Barrel::TpcYMin) || (pos.Y() > Barrel::TpcYMax)) &&
+         (pos.Z() >= Barrel::TpcZMin && pos.Z() <= Barrel::TpcZMax)))
+      {
+         i++;
+         continue;
+      }
+
+      TVector3 dir = utils::ArrayToTVector3(backTpc->DirectionEnd);
+      TVector3 zdir(0.0, 0.0, 1.0);
+      double tpcBackAzimuth = TMath::RadToDeg() * TMath::ATan(dir.X() / dir.Y());
+
+      if(dir.X() > 0 && dir.Y() < 0)
+      {
+         tpcBackAzimuth += 180;
+      }
+      else if(dir.X() < 0 && dir.Y() < 0)
+      {
+         tpcBackAzimuth -= 180;
+      }
+
+      double tpcBackAngleFromZ = dir.Unit().Dot(zdir);
+      tpcBackAngleFromZ = TMath::RadToDeg() * TMath::ACos(tpcBackAngleFromZ);
+
+      if(std::isnan(dir.X()) || !(
+         (tpcBackAngleFromZ >= Barrel::TpcAngleMin) &&
+         (fabs(tpcBackAzimuth) <= Barrel::TpcAzimuthAbs)))
+      {
+         i++;
+         continue;
+      }
+
+      if(track->Momentum > highestMomentum)
+      {
+         highestMomentum = track->Momentum;
+         tpcECalBox->barrelTrack = track;
+      }
+      i++;
    }
 
    return true;
@@ -426,13 +451,3 @@ bool SelectTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const
 
    return true;
 }
-
-bool MuonPIDCut::Apply(AnaEventB& event, ToyBoxB& box) const
-{
-   (void) event;
-
-   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
-
-   return tpcECalBox->isMuonLike;
-}
-

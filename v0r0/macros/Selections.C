@@ -31,10 +31,10 @@
    gStyle->SetOptStat(0);
 
    // DS ECal binning
-//   const int nds_mom = 6;
-//   const double ds_bins_mom[7] = {0, 400, 800, 1200, 2000, 3600, 5000};
-   const int nds_mom = 12;
-   const double ds_bins_mom[13] = {0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000, 4400, 4800};
+   const int nds_mom = 6;
+   const double ds_bins_mom[7] = {0, 400, 800, 1200, 2000, 3600, 5000};
+//   const int nds_mom = 12;
+//   const double ds_bins_mom[13] = {0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000, 4400, 4800};
    const int nds_ang = 5;
    const double ds_bins_ang[6] = {0.75, 0.8, 0.85, 0.925, 0.975, 1.0};
 
@@ -55,7 +55,7 @@
    std::string recoDS = "ecalDetector==23";
 
    // PID tags
-   std::string isElecton = "";
+   std::string isElectron = "isElectronLike==1";
    std::string isMuon = "isMuonLike==1";
    std::string isProton = "isProtonLike==1";
 
@@ -73,9 +73,46 @@
    draw.SetLegendPos("tr");
    draw.SetTitleX("Track Momentum (MeV)");
    draw.SetTitleY("Counts/Bin");
+   draw.Draw(mc1, mc2, momentum, nds_mom, ds_bins_mom, "particle", isDownstream + " && " + isElectron);
+   c1->Print("temp_sel_ds_ele.png", "png");
+   draw.Draw(mc1, mc2, momentum, nbr_mom, br_bins_mom, "particle", isBarrel + " && " + isElectron);
+   c1->Print("temp_sel_br_ele.png", "png");
    draw.Draw(mc1, mc2, momentum, nds_mom, ds_bins_mom, "particle", isDownstream + " && " + isMuon);
-   //draw.Draw(mc, momentum, nds_mom, ds_bins_mom, "all", isDownstream + " && " + isMuon);
+   c1->Print("temp_sel_ds_mu.png", "png");
+   draw.Draw(mc1, mc2, momentum, nbr_mom, br_bins_mom, "particle", isBarrel + " && " + isMuon);
+   c1->Print("temp_sel_br_mu.png", "png");
+   draw.Draw(mc1, mc2, momentum, nds_mom, ds_bins_mom, "particle", isDownstream + " && " + isProton);
+   c1->Print("temp_sel_ds_p.png", "png");
+   draw.Draw(mc1, mc2, momentum, nbr_mom, br_bins_mom, "particle", isBarrel + " && " + isProton);
+   c1->Print("temp_sel_br_p.png", "png");
+
+   draw.SetLegendPos("tl");
+   draw.SetTitleY("Purity and Efficiency");
+/*   std::cout << "DS Ele Purity" << std::endl;
+   draw.DrawEffPurVSCut(mc1, 0, 0, "particle==11", "");
+   c1->Print("temp_pur_ds_ele.png", "png");
 
    draw.SetTitleY("Purity and Efficiency");
-   draw.DrawEffPurVSCut(mc1, 0, "particle==13 || particle==-13", "", 0);
+   std::cout << "Barrel Ele Purity" << std::endl;
+   draw.DrawEffPurVSCut(mc1, 0, 1, "particle==11", "");
+   c1->Print("temp_pur_br_ele.png", "png");
+   
+   draw.SetTitleY("Purity and Efficiency");
+   std::cout << "DS Mu Purity" << std::endl;
+   draw.DrawEffPurVSCut(mc1, 1, 0, "particle==13");
+   c1->Print("temp_pur_ds_mu.png", "png");
+
+   std::cout << "Barrel Mu Purity" << std::endl;
+   draw.DrawEffPurVSCut(mc1, 1, 1, "particle==13");
+   c1->Print("temp_pur_br_mu.png", "png");*/
+
+   draw.DrawEventsVSCut(mc1, 0, "", 2)
+
+   std::cout << "DS Prot Purity" << std::endl;
+   draw.DrawEffPurVSCut(mc1, 2, 0, "particle==2212", "");
+   c1->Print("temp_pur_ds_p.png", "png");
+
+   std::cout << "Barrel Prot Purity" << std::endl;
+   draw.DrawEffPurVSCut(mc1, 2, 1, "particle==2212", "");
+   c1->Print("temp_pur_br_p.png", "png");
 }

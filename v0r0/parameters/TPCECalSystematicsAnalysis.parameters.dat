@@ -2,7 +2,9 @@
  < TPCECalSystematicsAnalysis.MinAccumLevelToSave = 2 >   // minimum accum level to save the event
 
 --- Selections --------
- < TPCECalSystematicsAnalysis.Selections.RunSelectionWithBranches       = 1 >	
-
+ < TPCECalSystematicsAnalysis.Selections.RunMuonSelection = 0 >
+ < TPCECalSystematicsAnalysis.Selections.RunElectronSelection = 0 >
+ < TPCECalSystematicsAnalysis.Selections.RunProtonSelection = 1 >
+ 
 --- Systematics --------
- < TPCECalSystematicsAnalysis.Systematics.EnableTutorialSystematics     = 1 >
+ 

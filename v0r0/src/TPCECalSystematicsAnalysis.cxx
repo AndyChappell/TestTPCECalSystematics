@@ -1,7 +1,9 @@
 #include "TPCECalSystematicsAnalysis.hxx"
 #include "FiducialVolumeDefinition.hxx"
 #include "Parameters.hxx"
-#include "TPCECalSelection.hxx"
+#include "TPCECalElectronSelection.hxx"
+#include "TPCECalMuonSelection.hxx"
+#include "TPCECalProtonSelection.hxx"
 #include "CategoriesUtils.hxx"
 #include "BasicUtils.hxx"
 #include "baseToyMaker.hxx"
@@ -26,12 +28,29 @@ bool TPCECalSystematicsAnalysis::Initialize(){
 }
 
 void TPCECalSystematicsAnalysis::DefineSelections(){
-  // Add a more complicated selection with branches
-  sel().AddSelection("TPCECal",  "TPC/ECal selection",     new TPCECalSelection(false));
+   // Add a more complicated selection with branches
+   sel().AddSelection("TPCECalMuon",  "TPC/ECal muon selection", new TPCECalMuonSelection(false));
+   sel().AddSelection("TPCECalElectron",  "TPC/ECal electron selection", new TPCECalElectronSelection(false));
+   sel().AddSelection("TPCECalProton",  "TPC/ECal proton selection", new TPCECalProtonSelection(false));
 
-  if (!ND::params().GetParameterI("TPCECalSystematicsAnalysis.Selections.RunSelectionWithBranches"))
-    sel().DisableSelection("TPCECal");
-
+   if(!ND::params().GetParameterI(
+      "TPCECalSystematicsAnalysis.Selections.RunMuonSelection"))
+   {
+      sel().DisableSelection("TPCECalMuon");
+      std::cout << "Disable muon" << std::endl;
+   }
+   if(!ND::params().GetParameterI(
+      "TPCECalSystematicsAnalysis.Selections.RunElectronSelection"))
+   {
+      sel().DisableSelection("TPCECalElectron");
+      std::cout << "Disable electron" << std::endl;
+   }
+   if(!ND::params().GetParameterI(
+      "TPCECalSystematicsAnalysis.Selections.RunProtonSelection"))
+   {
+      sel().DisableSelection("TPCECalProton");
+      std::cout << "Disable proton" << std::endl;
+   }
 }
 
 void TPCECalSystematicsAnalysis::DefineCorrections(){
@@ -63,6 +82,7 @@ void TPCECalSystematicsAnalysis::DefineMicroTrees(bool addBase)
    AddVarI(output(), ecalDetector, "Number identifying the part of the ECal that"
       "the track appears to enter. 9 == DS, 5 - 8 == BR");
    AddVarI(output(), isMuonLike, "is muon candidate");
+   AddVarI(output(), isElectronLike, "is electron candidate");
    AddVarI(output(), isProtonLike, "is proton candidate");
    AddVarF(output(), charge, "Reconstructed charge of the selected track");
    AddVarF(output(), momentum, "Reconstructed momentum of the selected track");
@@ -110,6 +130,7 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
 
       output().FillVar(ecalDetector, det);
       output().FillVar(isMuonLike, tpcECalBox->isMuonLike);
+      output().FillVar(isElectronLike, tpcECalBox->isElectronLike);
       output().FillVar(isProtonLike, tpcECalBox->isProtonLike);
 
       AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(
@@ -141,9 +162,11 @@ void TPCECalSystematicsAnalysis::FillTruthTree(const AnaTrueVertex& vtx){
   output().FillVar(truemu_mom,vtx.LeptonMom);
 }
 
-void TPCECalSystematicsAnalysis::FillCategories(){
-  // For the muon candidate
-  anaUtils::FillCategories(_event, static_cast<AnaTrack*>(box().MainTrack),"", SubDetId::kFGD1);
+void TPCECalSystematicsAnalysis::FillCategories()
+{
+   const ToyBoxTPCECal* tpcECalBox = static_cast<const ToyBoxTPCECal*>(&box());
+   anaUtils::FillCategories(_event, static_cast<AnaTrack*>(
+      tpcECalBox->selectedTrack), "", SubDetId::kFGD1);
 }
 
 bool TPCECalSystematicsAnalysis::IsBarrelECal(const unsigned long detector)
