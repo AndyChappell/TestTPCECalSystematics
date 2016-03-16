@@ -5,45 +5,35 @@
 #include "EventBoxUtils.hxx"
 #include "baseAnalysis.hxx"
 
-//********************************************************************
-TPCECalElectronSelection::TPCECalElectronSelection(bool forceBreak): SelectionBase(forceBreak) {
-//********************************************************************
-
+TPCECalElectronSelection::TPCECalElectronSelection(bool forceBreak): SelectionBase(forceBreak)
+{
 }
 
-//********************************************************************
-void TPCECalElectronSelection::DefineDetectorFV(){
-//********************************************************************
-
-  // Set the detector Fiducial Volume in which the selection is applied. This is now a mandatory method
-  SetDetectorFV(SubDetId::kFGD1);
+void TPCECalElectronSelection::DefineDetectorFV()
+{
+   // Set the detector Fiducial Volume in which the selection is applied. This is now a mandatory method
+   SetDetectorFV(SubDetId::kFGD);
 }
 
-bool TPCECalElectronSelection::FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]){
-
-    if(allCutsPassed[0]){
-        event.Summary->EventSample = nd280Samples::kFGD1NuMuCC;
-    }
-    return (event.Summary->EventSample != nd280Samples::kUnassigned);
+bool TPCECalElectronSelection::FillEventSummary(AnaEventB& event, Int_t allCutsPassed[])
+{
+    return true;
 }
 
-//********************************************************************
-void TPCECalElectronSelection::DefineSteps(){
-//********************************************************************
-
+void TPCECalElectronSelection::DefineSteps()
+{
    // Cuts must be added in the right order
    // last "true" means the step sequence is broken if cut is not passed (default is "false")
    AddStep(StepBase::kCut, "Evt Qual", new EventQualityCut(), true);
-   AddStep(StepBase::kCut, "> 0 Tracks", new TotalMultiplicityCut(), true);  
-
-   AddStep(StepBase::kAction, "Leading Tracks",
-      new FindNegativeLeadingTracksAction(), true);
-//   AddStep(StepBase::kAction, "Find Vertex", new FindVertexAction());  
-//   AddStep(StepBase::kCut, "Qual + Fid", new TrackQualityFiducialCut(), true);
+   AddStep(StepBase::kCut, "FGD + TPC", new FGDTPCTracksCut(), true);
+   AddStep(StepBase::kCut, "FGD FV", new FGDFVTracksCut(), true);
+   AddStep(StepBase::kCut, ">1 track", new MultiplicityCut(2), true);
+   AddStep(StepBase::kCut, "< 10 cm", new SeparationTracksCut(), true);
+   AddStep(StepBase::kCut, "Opp Sign", new OppositeChargeTracksCut(), true);
+   AddStep(StepBase::kCut, "Neg Partner", new NegativePartnerTracksCut(), true);
    AddStep(StepBase::kCut, "TPC Qual", new TPCTrackQualityCut(), true);
-   AddStep(StepBase::kAction, "Find Electron PID", new FindElectronPIDAction());
-//   AddStep(StepBase::kCut, "Neg Mul", new NegativeMultiplicityCut());
-   AddStep(StepBase::kCut, "Electron PID", new ElectronPIDCut());
+   AddStep(StepBase::kAction, "Find e PID", new FindElectronPIDAction());
+   AddStep(StepBase::kCut, "e PID", new ElectronPIDCut());
    AddStep(StepBase::kAction, "Find DS Track",
       new FindDownstreamTracksAction());
    AddStep(StepBase::kAction, "Find Barrel Track",

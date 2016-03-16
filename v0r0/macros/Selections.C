@@ -95,22 +95,23 @@
 
    draw.SetLegendPos("tl");
    draw.SetTitleY("Purity and Efficiency");
-   std::cout << "DS Mu Purity" << std::endl;
+
+/*   std::cout << "DS Mu Purity" << std::endl;
    draw.DrawEffPurVSCut(mc1, 0, 0, "particle==13");
    c1->Print("temp_pur_ds_mu.png", "png");
 
    std::cout << "Barrel Mu Purity" << std::endl;
    draw.DrawEffPurVSCut(mc1, 0, 1, "particle==13");
-   c1->Print("temp_pur_br_mu.png", "png");
+   c1->Print("temp_pur_br_mu.png", "png");*/
 
-/*   std::cout << "DS Ele Purity" << std::endl;
+   std::cout << "DS Ele Purity" << std::endl;
    draw.DrawEffPurVSCut(mc1, 1, 0, "particle==11", "");
    c1->Print("temp_pur_ds_ele.png", "png");
 
    draw.SetTitleY("Purity and Efficiency");
    std::cout << "Barrel Ele Purity" << std::endl;
    draw.DrawEffPurVSCut(mc1, 1, 1, "particle==11", "");
-   c1->Print("temp_pur_br_ele.png", "png");*/
+   c1->Print("temp_pur_br_ele.png", "png");
 
 //   draw.DrawEventsVSCut(mc1, 0, "", 2)
 

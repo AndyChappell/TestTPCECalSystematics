@@ -22,6 +22,9 @@ public:
       selectedTrack = nullptr;
       negativeTracks.clear();
       positiveTracks.clear();
+      fgd1Tracks.clear();
+      fgd2Tracks.clear();
+      fgdPairedTracks.clear();
    }
 
    virtual void Reset()
@@ -37,6 +40,9 @@ public:
       selectedTrack = nullptr;
       negativeTracks.clear();
       positiveTracks.clear();
+      fgd1Tracks.clear();
+      fgd2Tracks.clear();
+      fgdPairedTracks.clear();
    }
   
    virtual ~ToyBoxTPCECal(){ }
@@ -58,6 +64,13 @@ public:
    std::list<AnaTrackB*> negativeTracks;
    /// All positive tracks
    std::list<AnaTrackB*> positiveTracks;
+
+   /// FGD1 tracks
+   std::list<AnaTrackB*> fgd1Tracks;
+   /// FGD2 tracks
+   std::list<AnaTrackB*> fgd2Tracks;
+   /// Pairs of tracks
+   std::list<std::pair<AnaTrackB*, AnaTrackB*>*> fgdPairedTracks;
 
    /// Track appearing to enter the downstream ECal.
    AnaTrackB* downstreamTrack;
@@ -172,6 +185,17 @@ class TotalMultiplicityCut: public StepBase{
   StepBase* MakeClone(){return new TotalMultiplicityCut();}
 };
 
+class MultiplicityCut: public StepBase{
+public:
+   MultiplicityCut(const unsigned int minTracks) : minimumTracks(minTracks) { }
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new MultiplicityCut(minimumTracks);}
+
+private:
+   unsigned int minimumTracks;
+};
+
 class ExternalVetoCut: public StepBase{
  public:
   using StepBase::Apply;
@@ -246,6 +270,46 @@ class SelectTrackAction: public StepBase
    using StepBase::Apply;
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
    StepBase* MakeClone(){ return new SelectTrackAction(); }
+};
+
+class FGDTPCTracksCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new FGDTPCTracksCut();}
+};
+
+class FGDFVTracksCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new FGDFVTracksCut();}
+};
+
+class SeparationTracksCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new SeparationTracksCut();}
+};
+
+class OppositeChargeTracksCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new OppositeChargeTracksCut();}
+};
+
+class NegativePartnerTracksCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new NegativePartnerTracksCut();}
 };
 
 #endif

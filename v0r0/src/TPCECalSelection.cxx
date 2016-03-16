@@ -1,3 +1,4 @@
+#include <boost/fusion/iterator/next.hpp>
 #include "TPCECalSelection.hxx"
 #include "baseSelection.hxx"
 #include "CutUtils.hxx"
@@ -122,6 +123,16 @@ bool TotalMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
    bool passes = (EventBox->nTracksInGroup[EventBoxTracker::kTracksWithTPC]>0);
 
    return passes;
+}
+
+bool MultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
+
+   (void)event;
+  
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   return (tpcECalBox->fgd1Tracks.size() >= minimumTracks ||
+      tpcECalBox->fgd2Tracks.size() >= minimumTracks);
 }
 
 bool TPCTrackQualityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
@@ -473,3 +484,168 @@ bool SelectTrackAction::Apply(AnaEventB& event, ToyBoxB& box) const
 
    return true;
 }
+
+bool FGDTPCTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void) event;
+
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   SubDetId::SubDetEnum det = tpcECalBox->DetectorFV;
+   EventBoxTracker::TrackGroupEnum groupID;
+   EventBoxB* eventBox = event.EventBoxes[AnaEventB::kEventBoxTracker];
+   AnaTrackB** fgd1Tracks = nullptr;
+   AnaTrackB** fgd2Tracks = nullptr;
+   int nFgd1Tracks = 0;
+   int nFgd2Tracks = 0;
+   switch(det)
+   {
+      case SubDetId::kFGD:
+         groupID = EventBoxTracker::kTracksWithGoodQualityTPCInFGD1FV;
+         fgd1Tracks = eventBox->TracksInGroup[groupID];
+         nFgd1Tracks = eventBox->nTracksInGroup[groupID];
+         groupID = EventBoxTracker::kTracksWithGoodQualityTPCInFGD2FV;
+         fgd2Tracks = eventBox->TracksInGroup[groupID];
+         nFgd2Tracks = eventBox->nTracksInGroup[groupID];
+         break;
+      case SubDetId::kFGD1:
+         groupID = EventBoxTracker::kTracksWithGoodQualityTPCInFGD1FV;
+         fgd1Tracks = eventBox->TracksInGroup[groupID];
+         nFgd1Tracks = eventBox->nTracksInGroup[groupID];
+         break;
+      case SubDetId::kFGD2:
+         groupID = EventBoxTracker::kTracksWithGoodQualityTPCInFGD2FV;
+         fgd2Tracks = eventBox->TracksInGroup[groupID];
+         nFgd2Tracks = eventBox->nTracksInGroup[groupID];
+         break;
+      default:
+         return false;
+   }
+
+   for(Int_t i = 0; i < nFgd1Tracks; ++i)
+   {
+      AnaTrackB* track = fgd1Tracks[i];
+      tpcECalBox->fgd1Tracks.push_back(track);
+   }
+
+   for(Int_t i = 0; i < nFgd2Tracks; ++i)
+   {
+      AnaTrackB* track = fgd2Tracks[i];
+      tpcECalBox->fgd2Tracks.push_back(track);
+   }
+
+   return (tpcECalBox->fgd1Tracks.size() + tpcECalBox->fgd2Tracks.size()) > 0;
+}
+
+bool FGDFVTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+   
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->fgd1Tracks.begin();
+   while(i != tpcECalBox->fgd1Tracks.end())
+   {
+      cutUtils::FiducialCut(*(*i), SubDetId::kFGD1) ?
+         i++ : tpcECalBox->fgd1Tracks.erase(i++);
+   } 
+
+   i = tpcECalBox->fgd2Tracks.begin();
+   while(i != tpcECalBox->fgd2Tracks.end())
+   {
+      cutUtils::FiducialCut(*(*i), SubDetId::kFGD2) ?
+         i++ : tpcECalBox->fgd2Tracks.erase(i++);
+   }
+
+   return (tpcECalBox->fgd1Tracks.size() + tpcECalBox->fgd2Tracks.size()) > 0;
+}
+
+bool SeparationTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+   
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->fgd1Tracks.begin();
+   while(i != tpcECalBox->fgd1Tracks.end())
+   {
+      std::list<AnaTrackB*>::iterator j = ++(std::list<AnaTrackB*>::iterator(i));
+      while(j != tpcECalBox->fgd1Tracks.end())
+      {
+         float squaredSeparation =
+            cutUtils::GetSeparationSquared((*i)->PositionStart, (*j)->PositionStart);
+         if(squaredSeparation < 0.01)
+         {
+            tpcECalBox->fgdPairedTracks.push_back(
+               new std::pair<AnaTrackB*, AnaTrackB*>(*i, *j));
+         }
+         j++;
+      }
+      i++;
+   }
+
+   i = tpcECalBox->fgd2Tracks.begin();
+   while(i != tpcECalBox->fgd2Tracks.end())
+   {
+      std::list<AnaTrackB*>::iterator j = ++(std::list<AnaTrackB*>::iterator(i));
+      while(j != tpcECalBox->fgd2Tracks.end())
+      {
+         float squaredSeparation =
+            cutUtils::GetSeparationSquared((*i)->PositionStart, (*j)->PositionStart);
+         if(squaredSeparation < 100)
+         {
+            tpcECalBox->fgdPairedTracks.push_back(
+               new std::pair<AnaTrackB*, AnaTrackB*>(*i, *j));
+         }
+         j++;
+      }
+      i++;
+   }
+
+   tpcECalBox->fgd1Tracks.clear();
+   tpcECalBox->fgd2Tracks.clear();
+
+   return tpcECalBox->fgdPairedTracks.size() > 0;
+}
+
+bool OppositeChargeTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+   
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   std::list<std::pair<AnaTrackB*, AnaTrackB*>*>::iterator i = tpcECalBox->fgdPairedTracks.begin();
+   while(i != tpcECalBox->fgdPairedTracks.end())
+   {
+      std::pair<AnaTrackB*, AnaTrackB*>* pair = *i;
+      (pair->first->Charge == pair->second->Charge) ?
+         tpcECalBox->fgdPairedTracks.erase(i++) : i++;
+   }
+
+   return tpcECalBox->fgdPairedTracks.size() > 0;
+}
+
+bool NegativePartnerTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+   
+   std::list<std::pair<AnaTrackB*, AnaTrackB*>*>::iterator i = tpcECalBox->fgdPairedTracks.begin();
+   while(i != tpcECalBox->fgdPairedTracks.end())
+   {
+      std::pair<AnaTrackB*, AnaTrackB*>* pair = *i;
+      if(pair->first->Charge < 0)
+      {
+         tpcECalBox->negativeTracks.push_back(pair->first);
+      }
+      else if(pair->second->Charge < 0)
+      {
+         tpcECalBox->negativeTracks.push_back(pair->second);
+      }
+      i++;
+   }
+
+   return tpcECalBox->negativeTracks.size() > 0;
+}
+
