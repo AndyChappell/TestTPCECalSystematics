@@ -42,6 +42,7 @@ public:
       entersDownstream,
       ecalDetector,
       isMuonLike,
+      isAntiMuonLike,
       isElectronLike,
       isProtonLike,
       charge,

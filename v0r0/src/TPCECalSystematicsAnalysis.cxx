@@ -4,6 +4,7 @@
 #include "TPCECalElectronSelection.hxx"
 #include "TPCECalMuonSelection.hxx"
 #include "TPCECalProtonSelection.hxx"
+#include "TPCECalAntiMuonSelection.hxx"
 #include "CategoriesUtils.hxx"
 #include "BasicUtils.hxx"
 #include "baseToyMaker.hxx"
@@ -32,6 +33,7 @@ void TPCECalSystematicsAnalysis::DefineSelections(){
    sel().AddSelection("TPCECalMuon",  "TPC/ECal muon selection", new TPCECalMuonSelection(false));
    sel().AddSelection("TPCECalElectron",  "TPC/ECal electron selection", new TPCECalElectronSelection(false));
    sel().AddSelection("TPCECalProton",  "TPC/ECal proton selection", new TPCECalProtonSelection(false));
+   sel().AddSelection("TPCECalAntiMuon",  "TPC/ECal antimuon selection", new TPCECalAntiMuonSelection(false));
 
    if(!ND::params().GetParameterI(
       "TPCECalSystematicsAnalysis.Selections.RunMuonSelection"))
@@ -50,6 +52,12 @@ void TPCECalSystematicsAnalysis::DefineSelections(){
    {
       sel().DisableSelection("TPCECalProton");
       std::cout << "Disable proton" << std::endl;
+   }
+   if(!ND::params().GetParameterI(
+      "TPCECalSystematicsAnalysis.Selections.RunAntiMuonSelection"))
+   {
+      sel().DisableSelection("TPCECalAntiMuon");
+      std::cout << "Disable antimuon" << std::endl;
    }
 }
 
@@ -82,6 +90,7 @@ void TPCECalSystematicsAnalysis::DefineMicroTrees(bool addBase)
    AddVarI(output(), ecalDetector, "Number identifying the part of the ECal that"
       "the track appears to enter. 9 == DS, 5 - 8 == BR");
    AddVarI(output(), isMuonLike, "is muon candidate");
+   AddVarI(output(), isAntiMuonLike, "is antimuon candidate");
    AddVarI(output(), isElectronLike, "is electron candidate");
    AddVarI(output(), isProtonLike, "is proton candidate");
    AddVarF(output(), charge, "Reconstructed charge of the selected track");
@@ -130,6 +139,7 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
 
       output().FillVar(ecalDetector, det);
       output().FillVar(isMuonLike, tpcECalBox->isMuonLike);
+      output().FillVar(isAntiMuonLike, tpcECalBox->isAntiMuonLike);
       output().FillVar(isElectronLike, tpcECalBox->isElectronLike);
       output().FillVar(isProtonLike, tpcECalBox->isProtonLike);
 

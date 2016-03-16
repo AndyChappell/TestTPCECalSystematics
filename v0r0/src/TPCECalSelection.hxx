@@ -105,6 +105,13 @@ class NegativeMultiplicityCut: public StepBase{
   StepBase* MakeClone(){return new NegativeMultiplicityCut();}
 };
 
+class PositiveMultiplicityCut: public StepBase{
+ public:
+  using StepBase::Apply;
+  bool Apply(AnaEventB& event, ToyBoxB& box) const;
+  StepBase* MakeClone(){return new PositiveMultiplicityCut();}
+};
+
 /// Negative leading tracks with good quality in FGD1
 class FindNegativeLeadingTracksAction: public StepBase{
  public:

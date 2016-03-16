@@ -9,7 +9,28 @@ bool NegativeMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const
 {
    (void)event;
 
-   return (box.HMNtrack==box.HMtrack);
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+   tpcECalBox->negativeTracks.clear();
+   if(tpcECalBox->HMtrack && (tpcECalBox->HMNtrack == tpcECalBox->HMtrack))
+   {
+      tpcECalBox->negativeTracks.push_back(tpcECalBox->HMNtrack);
+   }
+
+   return tpcECalBox->negativeTracks.size() > 0;
+}
+
+bool PositiveMultiplicityCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+   tpcECalBox->positiveTracks.clear();
+   if(tpcECalBox->HMtrack && (tpcECalBox->HMPtrack == tpcECalBox->HMtrack))
+   {
+      tpcECalBox->positiveTracks.push_back(tpcECalBox->HMPtrack);
+   }
+
+   return tpcECalBox->positiveTracks.size() > 0;
 }
 
 bool FindNegativeLeadingTracksAction::Apply(AnaEventB& event, ToyBoxB& box) const
@@ -127,6 +148,7 @@ bool TPCTrackQualityCut::Apply(AnaEventB& event, ToyBoxB& box) const{
    i = tpcECalBox->positiveTracks.begin();
    while(i != tpcECalBox->positiveTracks.end())
    {
+      std::list<AnaTrackB*>::iterator j = tpcECalBox->positiveTracks.end();
       AnaTpcTrack* track = static_cast<AnaTpcTrack*>(
          anaUtils::GetTPCBackSegment(*i));
 

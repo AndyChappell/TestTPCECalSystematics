@@ -1,4 +1,4 @@
-#include "TPCECalMuonSelection.hxx"
+#include "TPCECalAntiMuonSelection.hxx"
 #include "baseSelection.hxx"
 #include "CutUtils.hxx"
 #include "SubDetId.hxx"
@@ -6,20 +6,20 @@
 #include "baseAnalysis.hxx"
 
 //********************************************************************
-TPCECalMuonSelection::TPCECalMuonSelection(bool forceBreak): SelectionBase(forceBreak) {
+TPCECalAntiMuonSelection::TPCECalAntiMuonSelection(bool forceBreak): SelectionBase(forceBreak) {
 //********************************************************************
 
 }
 
 //********************************************************************
-void TPCECalMuonSelection::DefineDetectorFV(){
+void TPCECalAntiMuonSelection::DefineDetectorFV(){
 //********************************************************************
 
   // Set the detector Fiducial Volume in which the selection is applied. This is now a mandatory method
   SetDetectorFV(SubDetId::kFGD1);
 }
 
-bool TPCECalMuonSelection::FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]){
+bool TPCECalAntiMuonSelection::FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]){
 
     if(allCutsPassed[0]){
         event.Summary->EventSample = nd280Samples::kFGD1NuMuCC;
@@ -28,7 +28,7 @@ bool TPCECalMuonSelection::FillEventSummary(AnaEventB& event, Int_t allCutsPasse
 }
 
 //********************************************************************
-void TPCECalMuonSelection::DefineSteps(){
+void TPCECalAntiMuonSelection::DefineSteps(){
 //********************************************************************
 
    // Cuts must be added in the right order
@@ -37,18 +37,16 @@ void TPCECalMuonSelection::DefineSteps(){
    AddStep(StepBase::kCut, "> 0 Tracks", new TotalMultiplicityCut(), true);  
 
    AddStep(StepBase::kAction, "Leading Tracks",
-      new FindNegativeLeadingTracksAction());
-   AddStep(StepBase::kCut, "Neg Mul", new NegativeMultiplicityCut(), true);
+      new FindPositiveLeadingTracksAction());
+   AddStep(StepBase::kCut, "Pos Mul", new PositiveMultiplicityCut());
 //   AddStep(StepBase::kAction, "Find Vertex", new FindVertexAction());  
 //   AddStep(StepBase::kCut, "Qual + Fid", new TrackQualityFiducialCut(), true);
    AddStep(StepBase::kCut, "TPC Qual", new TPCTrackQualityCut(), true);
-//   AddStep(StepBase::kAction, "Find Veto Track", new FindVetoTrackAction());
    AddStep(StepBase::kCut, "Veto", new ExternalVetoCut());
-//   AddStep(StepBase::kAction, "Find OOFV Track", new FindOOFVTrackAction());
    AddStep(StepBase::kCut, "External FGD1", new ExternalFGD1lastlayersCut());      
-   AddStep(StepBase::kAction, "Find Muon PID", new FindMuonPIDAction());
+   AddStep(StepBase::kAction, "Find AntiMuon PID", new FindAntiMuonPIDAction());
 //   AddStep(StepBase::kCut, "Neg Mul", new NegativeMultiplicityCut());
-   AddStep(StepBase::kCut, "Muon PID", new MuonPIDCut());
+   AddStep(StepBase::kCut, "AntiMuon PID", new AntiMuonPIDCut());
    AddStep(StepBase::kAction, "Find DS Track",
       new FindDownstreamTracksAction());
    AddStep(StepBase::kAction, "Find Barrel Track",
@@ -71,13 +69,13 @@ void TPCECalMuonSelection::DefineSteps(){
    SetPreSelectionAccumLevel(2);
 }
 
-bool FindMuonPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
+bool FindAntiMuonPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
 {
    (void)event;
 
    ToyBoxTPCECal* tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
-   std::list<AnaTrackB*>::iterator i = tpcECalBox->negativeTracks.begin();
-   while(i != tpcECalBox->negativeTracks.end())
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->positiveTracks.begin();
+   while(i != tpcECalBox->positiveTracks.end())
    {
       AnaTpcTrack* track = static_cast<AnaTpcTrack*>(
          anaUtils::GetTPCBackSegment(*i));
@@ -88,21 +86,21 @@ bool FindMuonPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
       if((track->Momentum > 0) &&
          (pullMuon > -2 && pullMuon < 2) &&
          (pullElectron > 2 || pullElectron < -1) &&
-         (cutUtils::MuonPIDCut(*(*i), _prod5Cut)))
+         (cutUtils::AntiMuonPIDCut(*(*i))))
       {
-         tpcECalBox->isMuonLike = true;
+         tpcECalBox->isAntiMuonLike = true;
          i++;
       }
       else
       {
-         tpcECalBox->negativeTracks.erase(i++);
+         tpcECalBox->positiveTracks.erase(i++);
       }
    }
    
    return true;
 }
 
-void TPCECalMuonSelection::InitializeEvent(AnaEventB& event)
+void TPCECalAntiMuonSelection::InitializeEvent(AnaEventB& event)
 {
   // Create the appropriate EventBox if it does not exist yet
   if (!event.EventBoxes[AnaEventB::kEventBoxTracker])
@@ -114,11 +112,11 @@ void TPCECalMuonSelection::InitializeEvent(AnaEventB& event)
   boxUtils::FillTrajsChargedInFGDAndNoTPC(event, GetDetectorFV());
 }
 
-bool MuonPIDCut::Apply(AnaEventB& event, ToyBoxB& box) const
+bool AntiMuonPIDCut::Apply(AnaEventB& event, ToyBoxB& box) const
 {
    (void) event;
 
    ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
 
-   return tpcECalBox->isMuonLike;
+   return tpcECalBox->isAntiMuonLike;
 }
