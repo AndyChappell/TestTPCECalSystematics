@@ -5,6 +5,7 @@
 #include "TPCECalMuonSelection.hxx"
 #include "TPCECalProtonSelection.hxx"
 #include "TPCECalAntiMuonSelection.hxx"
+#include "TPCECalPositronSelection.hxx"
 #include "CategoriesUtils.hxx"
 #include "BasicUtils.hxx"
 #include "baseToyMaker.hxx"
@@ -34,6 +35,7 @@ void TPCECalSystematicsAnalysis::DefineSelections(){
    sel().AddSelection("TPCECalElectron",  "TPC/ECal electron selection", new TPCECalElectronSelection(false));
    sel().AddSelection("TPCECalProton",  "TPC/ECal proton selection", new TPCECalProtonSelection(false));
    sel().AddSelection("TPCECalAntiMuon",  "TPC/ECal antimuon selection", new TPCECalAntiMuonSelection(false));
+   sel().AddSelection("TPCECalPositron",  "TPC/ECal positron selection", new TPCECalPositronSelection(false));
 
    if(!ND::params().GetParameterI(
       "TPCECalSystematicsAnalysis.Selections.RunMuonSelection"))
@@ -58,6 +60,12 @@ void TPCECalSystematicsAnalysis::DefineSelections(){
    {
       sel().DisableSelection("TPCECalAntiMuon");
       std::cout << "Disable antimuon" << std::endl;
+   }
+   if(!ND::params().GetParameterI(
+      "TPCECalSystematicsAnalysis.Selections.RunPositronSelection"))
+   {
+      sel().DisableSelection("TPCECalPositron");
+      std::cout << "Disable positron" << std::endl;
    }
 }
 
@@ -92,6 +100,7 @@ void TPCECalSystematicsAnalysis::DefineMicroTrees(bool addBase)
    AddVarI(output(), isMuonLike, "is muon candidate");
    AddVarI(output(), isAntiMuonLike, "is antimuon candidate");
    AddVarI(output(), isElectronLike, "is electron candidate");
+   AddVarI(output(), isPositronLike, "is positron candidate");
    AddVarI(output(), isProtonLike, "is proton candidate");
    AddVarF(output(), charge, "Reconstructed charge of the selected track");
    AddVarF(output(), momentum, "Reconstructed momentum of the selected track");
@@ -141,6 +150,7 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
       output().FillVar(isMuonLike, tpcECalBox->isMuonLike);
       output().FillVar(isAntiMuonLike, tpcECalBox->isAntiMuonLike);
       output().FillVar(isElectronLike, tpcECalBox->isElectronLike);
+      output().FillVar(isPositronLike, tpcECalBox->isPositronLike);
       output().FillVar(isProtonLike, tpcECalBox->isProtonLike);
 
       AnaTpcTrack* backTpc = static_cast<AnaTpcTrack*>(

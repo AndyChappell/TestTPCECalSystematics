@@ -1,6 +1,6 @@
 {
-   char* mcfile = getenv("TPCECALMCFILE");
-   //char* mcfile = getenv("TPCECALANTIMCFILE");
+   //char* mcfile = getenv("TPCECALMCFILE");
+   char* mcfile = getenv("TPCECALANTIMCFILE");
 
    if(!mcfile)
    {
@@ -57,6 +57,7 @@
 
    // PID tags
    std::string isElectron = "isElectronLike==1";
+   std::string isPositron = "isPositronLike==1";
    std::string isMuon = "isMuonLike==1";
    std::string isAntiMuon = "isAntiMuonLike==1";
    std::string isProton = "isProtonLike==1";
@@ -91,7 +92,10 @@
    c1->Print("temp_sel_ds_mubar.png", "png");
    draw.Draw(mc1, mc2, momentum, nbr_mom, br_bins_mom, "particle", isBarrel + " && " + isAntiMuon);
    c1->Print("temp_sel_br_mubar.png", "png");
-
+   draw.Draw(mc1, mc2, momentum, nds_mom, ds_bins_mom, "particle", isDownstream + " && " + isPositron);
+   c1->Print("temp_sel_ds_ebar.png", "png");
+   draw.Draw(mc1, mc2, momentum, nbr_mom, br_bins_mom, "particle", isBarrel + " && " + isPositron);
+   c1->Print("temp_sel_br_ebar.png", "png");
 
    draw.SetLegendPos("tl");
    draw.SetTitleY("Purity and Efficiency");
@@ -104,14 +108,13 @@
    draw.DrawEffPurVSCut(mc1, 0, 1, "particle==13");
    c1->Print("temp_pur_br_mu.png", "png");*/
 
-   std::cout << "DS Ele Purity" << std::endl;
+/*   std::cout << "DS Ele Purity" << std::endl;
    draw.DrawEffPurVSCut(mc1, 1, 0, "particle==11", "");
    c1->Print("temp_pur_ds_ele.png", "png");
 
-   draw.SetTitleY("Purity and Efficiency");
    std::cout << "Barrel Ele Purity" << std::endl;
    draw.DrawEffPurVSCut(mc1, 1, 1, "particle==11", "");
-   c1->Print("temp_pur_br_ele.png", "png");
+   c1->Print("temp_pur_br_ele.png", "png");*/
 
 //   draw.DrawEventsVSCut(mc1, 0, "", 2)
 
@@ -123,12 +126,19 @@
    draw.DrawEffPurVSCut(mc1, 2, 1, "particle==2212", "");
    c1->Print("temp_pur_br_p.png", "png");*/
 
-/*   draw.SetTitleY("Purity and Efficiency");
-   std::cout << "DS Mu Purity" << std::endl;
+/*  std::cout << "DS Mu Purity" << std::endl;
    draw.DrawEffPurVSCut(mc1, 3, 0, "particle==-13");
    c1->Print("temp_pur_ds_mubar.png", "png");
 
    std::cout << "Barrel Mu Purity" << std::endl;
    draw.DrawEffPurVSCut(mc1, 3, 1, "particle==-13");
    c1->Print("temp_pur_br_mubar.png", "png");*/
+
+   std::cout << "DS Ele Purity" << std::endl;
+   draw.DrawEffPurVSCut(mc1, 4, 0, "particle==-11", "");
+   c1->Print("temp_pur_ds_ebar.png", "png");
+
+   std::cout << "Barrel Ele Purity" << std::endl;
+   draw.DrawEffPurVSCut(mc1, 4, 1, "particle==-11", "");
+   c1->Print("temp_pur_br_ebar.png", "png");
 }

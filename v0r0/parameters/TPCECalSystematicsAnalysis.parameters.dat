@@ -3,9 +3,10 @@
 
 --- Selections --------
  < TPCECalSystematicsAnalysis.Selections.RunMuonSelection = 0 >
- < TPCECalSystematicsAnalysis.Selections.RunElectronSelection = 1 >
+ < TPCECalSystematicsAnalysis.Selections.RunElectronSelection = 0 >
  < TPCECalSystematicsAnalysis.Selections.RunProtonSelection = 0 >
  < TPCECalSystematicsAnalysis.Selections.RunAntiMuonSelection = 0 >
+ < TPCECalSystematicsAnalysis.Selections.RunPositronSelection = 1 >
  
 --- Systematics --------
  

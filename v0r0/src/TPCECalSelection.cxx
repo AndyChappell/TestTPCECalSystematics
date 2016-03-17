@@ -649,3 +649,26 @@ bool NegativePartnerTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
    return tpcECalBox->negativeTracks.size() > 0;
 }
 
+bool PositivePartnerTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+   
+   std::list<std::pair<AnaTrackB*, AnaTrackB*>*>::iterator i = tpcECalBox->fgdPairedTracks.begin();
+   while(i != tpcECalBox->fgdPairedTracks.end())
+   {
+      std::pair<AnaTrackB*, AnaTrackB*>* pair = *i;
+      if(pair->first->Charge > 0)
+      {
+         tpcECalBox->positiveTracks.push_back(pair->first);
+      }
+      else if(pair->second->Charge > 0)
+      {
+         tpcECalBox->positiveTracks.push_back(pair->second);
+      }
+      i++;
+   }
+
+   return tpcECalBox->positiveTracks.size() > 0;
+}

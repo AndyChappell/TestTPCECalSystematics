@@ -49,6 +49,8 @@ public:
 
    /// Describes whether this track is thought to be an electron
    bool isElectronLike;
+   /// Describes whether this track is thought to be a positron
+   bool isPositronLike;
    /// Describes whether this track is thought to be a muon
    bool isMuonLike;
    /// Describes whether this track is thought to be an antimuon
@@ -310,6 +312,14 @@ public:
    using StepBase::Apply;
    bool Apply(AnaEventB& event, ToyBoxB& box) const;
    StepBase* MakeClone(){return new NegativePartnerTracksCut();}
+};
+
+class PositivePartnerTracksCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new PositivePartnerTracksCut();}
 };
 
 #endif

@@ -44,6 +44,7 @@ public:
       isMuonLike,
       isAntiMuonLike,
       isElectronLike,
+      isPositronLike,
       isProtonLike,
       charge,
       momentum,
