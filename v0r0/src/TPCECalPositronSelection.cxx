@@ -30,7 +30,7 @@ void TPCECalPositronSelection::DefineSteps()
    AddStep(StepBase::kCut, ">1 track", new MultiplicityCut(2), true);
    AddStep(StepBase::kCut, "< 10 cm", new SeparationTracksCut(), true);
    AddStep(StepBase::kCut, "Opp Sign", new OppositeChargeTracksCut(), true);
-   AddStep(StepBase::kCut, "Neg Partner", new PositivePartnerTracksCut(), true);
+   AddStep(StepBase::kCut, "Pos Partner", new PositivePartnerTracksCut(), true);
    AddStep(StepBase::kCut, "TPC Qual", new TPCTrackQualityCut(), true);
    AddStep(StepBase::kAction, "Find e+ PID", new FindPositronPIDAction());
    AddStep(StepBase::kCut, "e+ PID", new PositronPIDCut());
@@ -71,11 +71,13 @@ bool FindPositronPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
       Float_t pullElectron = track->Pullele;
       Float_t pullMuon = track->Pullmu;
       Float_t pullPion = track->Pullpi;
+      Float_t pullProton = track->Pullp;
       
       if((track->Momentum > 0) &&
          (pullElectron > -1 && pullElectron < 2) &&
          (pullMuon < -2.5 || pullMuon > 2.5) &&
-         (pullPion < -2 || pullPion > 2))
+         (pullPion < -2 || pullPion > 2) &&
+         (pullProton < -2.5 || pullProton > 2.5))
       {
          tpcECalBox->isPositronLike = true;
          i++;

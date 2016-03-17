@@ -59,6 +59,18 @@ void TPCECalProtonSelection::DefineSteps()
    SetPreSelectionAccumLevel(2);
 }
 
+void TPCECalProtonSelection::InitializeEvent(AnaEventB& event)
+{
+  // Create the appropriate EventBox if it does not exist yet
+  if (!event.EventBoxes[AnaEventB::kEventBoxTracker])
+    event.EventBoxes[AnaEventB::kEventBoxTracker] = new EventBoxTracker();
+  
+  boxUtils::FillTracksWithTPC(event,             GetDetectorFV());
+  boxUtils::FillTracksWithFGD(event,             GetDetectorFV());
+  boxUtils::FillTrajsChargedInTPC(event);
+  boxUtils::FillTrajsChargedInFGDAndNoTPC(event, GetDetectorFV());
+}
+
 bool FindProtonPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
 {
    (void)event;
@@ -88,18 +100,6 @@ bool FindProtonPIDAction::Apply(AnaEventB& event, ToyBoxB& box) const
    }
    
    return true;
-}
-
-void TPCECalProtonSelection::InitializeEvent(AnaEventB& event)
-{
-  // Create the appropriate EventBox if it does not exist yet
-  if (!event.EventBoxes[AnaEventB::kEventBoxTracker])
-    event.EventBoxes[AnaEventB::kEventBoxTracker] = new EventBoxTracker();
-  
-  boxUtils::FillTracksWithTPC(event,             GetDetectorFV());
-  boxUtils::FillTracksWithFGD(event,             GetDetectorFV());
-  boxUtils::FillTrajsChargedInTPC(event);
-  boxUtils::FillTrajsChargedInFGDAndNoTPC(event, GetDetectorFV());
 }
 
 bool ProtonPIDCut::Apply(AnaEventB& event, ToyBoxB& box) const
