@@ -1,32 +1,73 @@
 {
-   char* mcfile = getenv("TPCECALMCFILE");
-   char* antimcfile = getenv("TPCECALANTIMCFILE");
+//   std::string mcfile = std::string(getenv("TPCECALMCFILE"));
+//   std::string antimcfile = std::string(getenv("TPCECALANTIMCFILE"));
 
-   if(!mcfile || !antimcfile)
+   std::string rdp_e_file = std::string(getenv("E_RDP_FILE"));
+   std::string mcp_e_file = std::string(getenv("E_MCP_FILE"));
+   std::string rdp_mu_file = std::string(getenv("MU_RDP_FILE"));
+   std::string mcp_mu_file = std::string(getenv("MU_MCP_FILE"));
+   std::string rdp_p_file = std::string(getenv("P_RDP_FILE"));
+   std::string mcp_p_file = std::string(getenv("P_MCP_FILE"));
+   std::string rdp_ebar_file = std::string(getenv("EBAR_RDP_FILE"));
+   std::string mcp_ebar_file = std::string(getenv("EBAR_MCP_FILE"));
+   std::string rdp_mubar_file = std::string(getenv("MUBAR_RDP_FILE"));
+   std::string mcp_mubar_file = std::string(getenv("MUBAR_MCP_FILE"));
+
+   if(rdp_e_file.length() == 0 ||
+      mcp_e_file.length() == 0 ||
+      rdp_mu_file.length() == 0 ||
+      mcp_mu_file.length() == 0 ||
+      rdp_p_file.length() == 0 ||
+      mcp_p_file.length() == 0 ||
+      rdp_ebar_file.length() == 0 ||
+      mcp_ebar_file.length() == 0 ||
+      rdp_mubar_file.length() == 0 ||
+      mcp_mubar_file.length() == 0)
    {
-      std::cerr << "Error: Must set $TPCECALMCFILE and $TPCECALANTIMCFILE"
+      std::cerr << "Error: Environment variables for files not correctly set"
          ". Exiting." << std::endl;
       exit(1);
    }
 
-   // Read the data file.
-   DataSample mc(mcfile);
-   DataSample amc(antimcfile);
+   // Read the microtree files.
+   DataSample rdp_e(rdp_e_file);
+   DataSample mcp_e(mcp_e_file);
+   DataSample rdp_mu(rdp_mu_file);
+   DataSample mcp_mu(mcp_mu_file);
+   DataSample rdp_p(rdp_p_file);
+   DataSample mcp_p(mcp_p_file);
+   DataSample rdp_ebar(rdp_ebar_file);
+   DataSample mcp_ebar(mcp_ebar_file);
+   DataSample rdp_mubar(rdp_mubar_file);
+   DataSample mcp_mubar(mcp_mubar_file);
    // Pass a file to drawing tools to provide configuration information
-   DrawingToolsTPCECal draw(mcfile);
+   DrawingToolsTPCECal draw(mcp_e_file);
 
    // Check validity of file.
-   if(mc.GetTree()->GetEntries() == 0 || amc.GetTree()->GetEntries() == 0)
+   if(rdp_e.GetTree()->GetEntries() == 0 ||
+      mcp_e.GetTree()->GetEntries() == 0 ||
+      rdp_mu.GetTree()->GetEntries() == 0 ||
+      mcp_mu.GetTree()->GetEntries() == 0 ||
+      rdp_p.GetTree()->GetEntries() == 0 ||
+      mcp_p.GetTree()->GetEntries() == 0 ||
+      rdp_ebar.GetTree()->GetEntries() == 0 ||
+      mcp_ebar.GetTree()->GetEntries() == 0 ||
+      rdp_mubar.GetTree()->GetEntries() == 0 ||
+      mcp_mubar.GetTree()->GetEntries() == 0)
    {
       std::cerr << "Error: Tree has no entries. Exiting." << std::endl;
       exit(1);
    }
 
    // Print out the POT.
-   std::cout << std::endl << "Neutrino MC POT" << std::endl;
-   draw.DumpPOT(mc);
-   std::cout << std::endl << "Neutrino MC2 POT" << std::endl;
-   draw.DumpPOT(amc);
+   std::cout << std::endl << "RDP POT" << std::endl;
+   draw.DumpPOT(rdp_e);
+   std::cout << std::endl << "ARDP POT" << std::endl;
+   draw.DumpPOT(rdp_ebar);
+   std::cout << std::endl << "MCP POT" << std::endl;
+   draw.DumpPOT(mcp_e);
+   std::cout << std::endl << "AMCP POT" << std::endl;
+   draw.DumpPOT(mcp_ebar);
 
    draw.SetDifferentStackFillStyles();
    draw.ApplyRange(false);
@@ -54,13 +95,6 @@
    // Reconstructed as entering the downstream (SubDetId::SubDetEnum::kDSECAL == 23)
    std::string recoDS = "ecalDetector==23";
 
-   // PID tags
-   std::string isElectron = "isElectronLike==1";
-   std::string isPositron = "isPositronLike==1";
-   std::string isMuon = "isMuonLike==1";
-   std::string isAntiMuon = "isAntiMuonLike==1";
-   std::string isProton = "isProtonLike==1";
-
    std::string momentum = "momentum";
    std::string angle = "direction[2]";
 
@@ -69,69 +103,69 @@
    draw.SetLegendPos("tr");
    draw.SetTitleX("Track Momentum (MeV)");
    draw.SetTitleY("Counts/Bin");
-   draw.Draw(mc, mc, momentum, nds_mom, ds_bins_mom, "particle", isDownstream);
+   draw.Draw(rdp_e, mcp_e, momentum, nds_mom, ds_bins_mom, "particle", isDownstream);
    c1->Print("temp_sel_ds_e.png", "png");
-   draw.Draw(mc, mc, momentum, nbr_mom, br_bins_mom, "particle", isBarrel);
+   draw.Draw(rdp_e, mcp_e, momentum, nbr_mom, br_bins_mom, "particle", isBarrel);
    c1->Print("temp_sel_br_e.png", "png");
-   draw.Draw(mc, mc, momentum, nds_mom, ds_bins_mom, "particle", isDownstream + " && " + isMuon);
+   draw.Draw(rdp_mu, mcp_mu, momentum, nds_mom, ds_bins_mom, "particle", isDownstream);
    c1->Print("temp_sel_ds_mu.png", "png");
-   draw.Draw(mc, mc, momentum, nbr_mom, br_bins_mom, "particle", isBarrel + " && " + isMuon);
+   draw.Draw(rdp_mu, mcp_mu, momentum, nbr_mom, br_bins_mom, "particle", isBarrel);
    c1->Print("temp_sel_br_mu.png", "png");
-   draw.Draw(mc, mc, momentum, nds_mom, ds_bins_mom, "particle", isDownstream + " && " + isProton);
+   draw.Draw(rdp_p, mcp_p, momentum, nds_mom, ds_bins_mom, "particle", isDownstream);
    c1->Print("temp_sel_ds_p.png", "png");
-   draw.Draw(mc, mc, momentum, nbr_mom, br_bins_mom, "particle", isBarrel + " && " + isProton);
+   draw.Draw(rdp_p, mcp_p, momentum, nbr_mom, br_bins_mom, "particle", isBarrel);
    c1->Print("temp_sel_br_p.png", "png");
-   draw.Draw(amc, amc, momentum, nds_mom, ds_bins_mom, "particle", isDownstream + " && " + isAntiMuon);
+   draw.Draw(rdp_mubar, mcp_mubar, momentum, nds_mom, ds_bins_mom, "particle", isDownstream);
    c1->Print("temp_sel_ds_mubar.png", "png");
-   draw.Draw(amc, amc, momentum, nbr_mom, br_bins_mom, "particle", isBarrel + " && " + isAntiMuon);
+   draw.Draw(rdp_mubar, mcp_mubar, momentum, nbr_mom, br_bins_mom, "particle", isBarrel);
    c1->Print("temp_sel_br_mubar.png", "png");
-   draw.Draw(amc, amc, momentum, nds_mom, ds_bins_mom, "particle", isDownstream);
+   draw.Draw(rdp_ebar, mcp_ebar, momentum, nds_mom, ds_bins_mom, "particle", isDownstream);
    c1->Print("temp_sel_ds_ebar.png", "png");
-   draw.Draw(amc, amc, momentum, nbr_mom, br_bins_mom, "particle", isBarrel);
+   draw.Draw(rdp_ebar, mcp_ebar, momentum, nbr_mom, br_bins_mom, "particle", isBarrel);
    c1->Print("temp_sel_br_ebar.png", "png");
 
    draw.SetLegendPos("tl");
    draw.SetTitleY("Purity and Efficiency");
 
-/*   std::cout << "DS Mu Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 0, 0, "particle==13");
+   std::cout << "DS e Purity" << std::endl;
+   draw.DrawEffPurVSCut(mcp_e, 0, 0, "particle==11", "");
+   c1->Print("temp_pur_ds_e.png", "png");
+
+   std::cout << "Barrel e Purity" << std::endl;
+   draw.DrawEffPurVSCut(mcp_e, 0, 1, "particle==11", "");
+   c1->Print("temp_pur_br_e.png", "png");
+
+   std::cout << "DS mu Purity" << std::endl;
+   draw.DrawEffPurVSCut(mcp_mu, 1, 0, "particle==13");
    c1->Print("temp_pur_ds_mu.png", "png");
 
-   std::cout << "Barrel Mu Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 0, 1, "particle==13");
-   c1->Print("temp_pur_br_mu.png", "png");*/
+   std::cout << "Barrel mu Purity" << std::endl;
+   draw.DrawEffPurVSCut(mcp_mu, 1, 1, "particle==13");
+   c1->Print("temp_pur_br_mu.png", "png");
 
-/*   std::cout << "DS Ele Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 1, 0, "particle==11", "");
-   c1->Print("temp_pur_ds_ele.png", "png");
-
-   std::cout << "Barrel Ele Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 1, 1, "particle==11", "");
-   c1->Print("temp_pur_br_ele.png", "png");*/
-
-//   draw.DrawEventsVSCut(mc1, 0, "", 2)
-
-/*   std::cout << "DS Prot Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 2, 0, "particle==2212", "");
+   std::cout << "DS p Purity" << std::endl;
+   draw.DrawEffPurVSCut(mcp_p, 2, 0, "particle==2212", "");
    c1->Print("temp_pur_ds_p.png", "png");
 
-   std::cout << "Barrel Prot Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 2, 1, "particle==2212", "");
-   c1->Print("temp_pur_br_p.png", "png");*/
-
-/*  std::cout << "DS Mu Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 3, 0, "particle==-13");
-   c1->Print("temp_pur_ds_mubar.png", "png");
-
-   std::cout << "Barrel Mu Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 3, 1, "particle==-13");
-   c1->Print("temp_pur_br_mubar.png", "png");*/
+   std::cout << "Barrel p Purity" << std::endl;
+   draw.DrawEffPurVSCut(mcp_p, 2, 1, "particle==2212", "");
+   c1->Print("temp_pur_br_p.png", "png");
 
    std::cout << "DS ebar Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 4, 0, "particle==-11", "");
+   draw.DrawEffPurVSCut(mcp_ebar, 3, 0, "particle==-11", "");
    c1->Print("temp_pur_ds_ebar.png", "png");
 
    std::cout << "Barrel ebar Purity" << std::endl;
-   draw.DrawEffPurVSCut(mc1, 4, 1, "particle==-11", "");
+   draw.DrawEffPurVSCut(mcp_ebar, 3, 1, "particle==-11", "");
    c1->Print("temp_pur_br_ebar.png", "png");
+
+  std::cout << "DS mubar Purity" << std::endl;
+   draw.DrawEffPurVSCut(mcp_mubar, 4, 0, "particle==-13");
+   c1->Print("temp_pur_ds_mubar.png", "png");
+
+   std::cout << "Barrel mubar Purity" << std::endl;
+   draw.DrawEffPurVSCut(mcp_mubar, 5, 1, "particle==-13");
+   c1->Print("temp_pur_br_mubar.png", "png");
+
+//   draw.DrawEventsVSCut(mc1, 0, "", 2)
 }

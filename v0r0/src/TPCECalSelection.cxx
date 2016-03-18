@@ -574,7 +574,7 @@ bool SeparationTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
       {
          float squaredSeparation =
             cutUtils::GetSeparationSquared((*i)->PositionStart, (*j)->PositionStart);
-         if(squaredSeparation < 0.01)
+         if(squaredSeparation < 100)
          {
             tpcECalBox->fgdPairedTracks.push_back(
                new std::pair<AnaTrackB*, AnaTrackB*>(*i, *j));
@@ -671,4 +671,117 @@ bool PositivePartnerTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
    }
 
    return tpcECalBox->positiveTracks.size() > 0;
+}
+
+bool PositiveTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+   
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->fgd1Tracks.begin();
+   while(i != tpcECalBox->fgd1Tracks.end())
+   {
+      if((*i)->Charge > 0)
+      {
+         tpcECalBox->positiveTracks.push_back(*i);
+      }
+      i++;
+   }
+
+   i = tpcECalBox->fgd2Tracks.begin();
+   while(i != tpcECalBox->fgd2Tracks.end())
+   {
+      if((*i)->Charge > 0)
+      {
+         tpcECalBox->positiveTracks.push_back(*i);
+      }
+      i++;
+   }
+
+   tpcECalBox->fgd1Tracks.clear();
+   tpcECalBox->fgd2Tracks.clear();
+
+   return tpcECalBox->positiveTracks.size() > 0;
+}
+
+bool NegativeTracksCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+   
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->fgd1Tracks.begin();
+   while(i != tpcECalBox->fgd1Tracks.end())
+   {
+      if((*i)->Charge < 0)
+      {
+         tpcECalBox->negativeTracks.push_back(*i);
+      }
+      i++;
+   }
+
+   i = tpcECalBox->fgd2Tracks.begin();
+   while(i != tpcECalBox->fgd2Tracks.end())
+   {
+      if((*i)->Charge > 0)
+      {
+         tpcECalBox->negativeTracks.push_back(*i);
+      }
+      i++;
+   }
+
+   tpcECalBox->fgd1Tracks.clear();
+   tpcECalBox->fgd2Tracks.clear();
+
+   return tpcECalBox->negativeTracks.size() > 0;
+}
+
+bool HighestMomentumTrackCut::Apply(AnaEventB& event, ToyBoxB& box) const
+{
+   (void)event;
+   
+   ToyBoxTPCECal *tpcECalBox = static_cast<ToyBoxTPCECal*>(&box);
+
+   Float_t highestMomentum = 0;
+   AnaTrackB* hmTrack = nullptr;
+   std::list<AnaTrackB*>::iterator i = tpcECalBox->positiveTracks.begin();
+   while(i != tpcECalBox->positiveTracks.end())
+   {
+      if((*i)->Momentum > highestMomentum)
+      {
+         highestMomentum = (*i)->Momentum;
+         hmTrack = *i;
+      }
+      i++;
+   }
+   if(hmTrack)
+   {
+      tpcECalBox->positiveTracks.clear();
+      tpcECalBox->positiveTracks.push_back(hmTrack);
+
+      return tpcECalBox->positiveTracks.size() > 0;
+   }
+
+   highestMomentum = 0;
+   hmTrack = nullptr;
+   i = tpcECalBox->negativeTracks.begin();
+   while(i != tpcECalBox->negativeTracks.end())
+   {
+      if((*i)->Momentum > highestMomentum)
+      {
+         highestMomentum = (*i)->Momentum;
+         hmTrack = *i;
+      }
+      i++;
+   }
+   if(hmTrack)
+   {
+      tpcECalBox->negativeTracks.clear();
+      tpcECalBox->negativeTracks.push_back(hmTrack);
+
+      return tpcECalBox->negativeTracks.size() > 0;
+   }
+
+   return false;
 }

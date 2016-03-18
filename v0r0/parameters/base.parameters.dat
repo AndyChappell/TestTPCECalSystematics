@@ -1,0 +1,6 @@
+--- Cut levels --------
+ < TPCECalSystematicsAnalysis.MinAccumLevelToSave = 2 >   // minimum accum level to save the event
+
+--- Systematics --------
+ 
+--- Selections --------

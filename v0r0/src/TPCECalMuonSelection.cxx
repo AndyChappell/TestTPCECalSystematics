@@ -15,8 +15,7 @@ TPCECalMuonSelection::TPCECalMuonSelection(bool forceBreak): SelectionBase(force
 void TPCECalMuonSelection::DefineDetectorFV(){
 //********************************************************************
 
-  // Set the detector Fiducial Volume in which the selection is applied. This is now a mandatory method
-  SetDetectorFV(SubDetId::kFGD1);
+  SetDetectorFV(SubDetId::kFGD);
 }
 
 bool TPCECalMuonSelection::FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]){
@@ -34,20 +33,22 @@ void TPCECalMuonSelection::DefineSteps(){
    // Cuts must be added in the right order
    // last "true" means the step sequence is broken if cut is not passed (default is "false")
    AddStep(StepBase::kCut, "Evt Qual", new EventQualityCut(), true);
-   AddStep(StepBase::kCut, "> 0 Tracks", new TotalMultiplicityCut(), true);  
 
+   AddStep(StepBase::kCut, "FGD + TPC", new FGDTPCTracksCut(), true);
+   AddStep(StepBase::kCut, "FGD FV", new FGDFVTracksCut(), true);
+   AddStep(StepBase::kCut, ">0 track", new MultiplicityCut(1), true);
+   AddStep(StepBase::kCut, "+ve track", new NegativeTracksCut(), true);
+   AddStep(StepBase::kCut, "HM track", new HighestMomentumTrackCut(), true);
+
+/*   AddStep(StepBase::kCut, "> 0 Tracks", new TotalMultiplicityCut(), true);  
    AddStep(StepBase::kAction, "Leading Tracks",
       new FindNegativeLeadingTracksAction());
-   AddStep(StepBase::kCut, "Neg Mul", new NegativeMultiplicityCut(), true);
-//   AddStep(StepBase::kAction, "Find Vertex", new FindVertexAction());  
-//   AddStep(StepBase::kCut, "Qual + Fid", new TrackQualityFiducialCut(), true);
+   AddStep(StepBase::kCut, "Neg Mul", new NegativeMultiplicityCut(), true);*/
+
    AddStep(StepBase::kCut, "TPC Qual", new TPCTrackQualityCut(), true);
-//   AddStep(StepBase::kAction, "Find Veto Track", new FindVetoTrackAction());
    AddStep(StepBase::kCut, "Veto", new ExternalVetoCut());
-//   AddStep(StepBase::kAction, "Find OOFV Track", new FindOOFVTrackAction());
    AddStep(StepBase::kCut, "External FGD1", new ExternalFGD1lastlayersCut());      
    AddStep(StepBase::kAction, "Find Muon PID", new FindMuonPIDAction());
-//   AddStep(StepBase::kCut, "Neg Mul", new NegativeMultiplicityCut());
    AddStep(StepBase::kCut, "Muon PID", new MuonPIDCut());
    AddStep(StepBase::kAction, "Find DS Track",
       new FindDownstreamTracksAction());

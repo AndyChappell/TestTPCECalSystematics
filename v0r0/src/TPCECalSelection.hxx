@@ -322,4 +322,28 @@ public:
    StepBase* MakeClone(){return new PositivePartnerTracksCut();}
 };
 
+class PositiveTracksCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new PositiveTracksCut();}
+};
+
+class NegativeTracksCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new PositiveTracksCut();}
+};
+
+class HighestMomentumTrackCut: public StepBase
+{
+public:
+   using StepBase::Apply;
+   bool Apply(AnaEventB& event, ToyBoxB& box) const;
+   StepBase* MakeClone(){return new HighestMomentumTrackCut();}
+};
+
 #endif

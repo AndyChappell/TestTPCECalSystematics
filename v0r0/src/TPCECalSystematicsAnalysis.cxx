@@ -31,11 +31,11 @@ bool TPCECalSystematicsAnalysis::Initialize(){
 
 void TPCECalSystematicsAnalysis::DefineSelections(){
    // Add a more complicated selection with branches
-   sel().AddSelection("TPCECalMuon",  "TPC/ECal muon selection", new TPCECalMuonSelection(false));
    sel().AddSelection("TPCECalElectron",  "TPC/ECal electron selection", new TPCECalElectronSelection(false));
+   sel().AddSelection("TPCECalMuon",  "TPC/ECal muon selection", new TPCECalMuonSelection(false));
    sel().AddSelection("TPCECalProton",  "TPC/ECal proton selection", new TPCECalProtonSelection(false));
-   sel().AddSelection("TPCECalAntiMuon",  "TPC/ECal antimuon selection", new TPCECalAntiMuonSelection(false));
    sel().AddSelection("TPCECalPositron",  "TPC/ECal positron selection", new TPCECalPositronSelection(false));
+   sel().AddSelection("TPCECalAntiMuon",  "TPC/ECal antimuon selection", new TPCECalAntiMuonSelection(false));
 
    if(!ND::params().GetParameterI(
       "TPCECalSystematicsAnalysis.Selections.RunMuonSelection"))

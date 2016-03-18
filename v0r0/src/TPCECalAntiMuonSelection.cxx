@@ -16,7 +16,7 @@ void TPCECalAntiMuonSelection::DefineDetectorFV(){
 //********************************************************************
 
   // Set the detector Fiducial Volume in which the selection is applied. This is now a mandatory method
-  SetDetectorFV(SubDetId::kFGD1);
+  SetDetectorFV(SubDetId::kFGD);
 }
 
 bool TPCECalAntiMuonSelection::FillEventSummary(AnaEventB& event, Int_t allCutsPassed[]){
@@ -34,13 +34,18 @@ void TPCECalAntiMuonSelection::DefineSteps(){
    // Cuts must be added in the right order
    // last "true" means the step sequence is broken if cut is not passed (default is "false")
    AddStep(StepBase::kCut, "Evt Qual", new EventQualityCut(), true);
-   AddStep(StepBase::kCut, "> 0 Tracks", new TotalMultiplicityCut(), true);  
 
+   AddStep(StepBase::kCut, "FGD + TPC", new FGDTPCTracksCut(), true);
+   AddStep(StepBase::kCut, "FGD FV", new FGDFVTracksCut(), true);
+   AddStep(StepBase::kCut, ">0 track", new MultiplicityCut(1), true);
+   AddStep(StepBase::kCut, "+ve track", new PositiveTracksCut(), true);
+   AddStep(StepBase::kCut, "HM track", new HighestMomentumTrackCut(), true);
+
+/*   AddStep(StepBase::kCut, "> 0 Tracks", new TotalMultiplicityCut(), true);  
    AddStep(StepBase::kAction, "Leading Tracks",
       new FindPositiveLeadingTracksAction());
-   AddStep(StepBase::kCut, "Pos Mul", new PositiveMultiplicityCut());
-//   AddStep(StepBase::kAction, "Find Vertex", new FindVertexAction());  
-//   AddStep(StepBase::kCut, "Qual + Fid", new TrackQualityFiducialCut(), true);
+   AddStep(StepBase::kCut, "Pos Mul", new PositiveMultiplicityCut());*/
+
    AddStep(StepBase::kCut, "TPC Qual", new TPCTrackQualityCut(), true);
    AddStep(StepBase::kCut, "Veto", new ExternalVetoCut());
    AddStep(StepBase::kCut, "External FGD1", new ExternalFGD1lastlayersCut());      
