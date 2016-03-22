@@ -4,6 +4,8 @@
 #include "DrawingTools.hxx"
 
 double GetBinomialUncertainty(double numer, double denom);
+double GetSystematic(double rdpEfficiency, double mcpEfficiency,
+   double rdpError, double mcpError);
 
 class DrawingToolsTPCECal: public DrawingTools
 {

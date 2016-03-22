@@ -20,6 +20,13 @@ double GetBinomialUncertainty(double numer, double denom)
    return sqrt(frac * (1 - frac) / denom);
 }
 
+double GetSystematic(double rdpEfficiency, double mcpEfficiency,
+   double rdpError, double mcpError)
+{
+   return sqrt((rdpEfficiency - mcpEfficiency) * (rdpEfficiency - mcpEfficiency) +
+      rdpError * rdpError + mcpError * mcpError);
+}
+
 DrawingToolsTPCECal::DrawingToolsTPCECal(const std::string& file,
    bool useT2Kstyle): DrawingTools(file, useT2Kstyle)
 {
@@ -157,13 +164,8 @@ void DrawingToolsTPCECal::PlotSystematic(DataSample& rdp, DataSample& mcp,
 
    for(int i = 0; i < numBins; i++)
    {
-      double rdpEff = data_eff.at(i);
-      double mcpEff = mc_eff.at(i);
-      double rdpErr = data_errs.at(i);
-      double mcpErr = mc_errs.at(i);
-      // Difference in data and MC squared + errors squared.
-      double systematic = sqrt((rdpEff - mcpEff) * (rdpEff - mcpEff) +
-         rdpErr * rdpErr + mcpErr * mcpErr);
+      double systematic = GetSystematic(data_eff.at(i), mc_eff.at(i),
+         data_errs.at(i), mc_errs.at(i));
 
       // Not -nan or inf
       if(!isnan(systematic) && !isinf(systematic))
