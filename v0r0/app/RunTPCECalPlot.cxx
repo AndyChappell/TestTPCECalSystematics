@@ -146,8 +146,12 @@ void DrawMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.SetTitleX("Track Momentum (MeV)");
    std::ostringstream ss;
 
-   draw.DrawEfficiency(rdp, momentum, signal, cut, n, bins, "", "#nu Data");
-   draw.DrawEfficiency(mcp, momentum, signal, cut, n, bins, "same", "#nu MC");         
+   TH1F rdpHistogram("", "", n, bins);
+   draw.PlotEfficiency(rdp, momentum, signal, cut, n, bins, rdpHistogram, "",
+      "#nu Data");
+   TH1F mcpHistogram("", "", n, bins);
+   draw.PlotEfficiency(mcp, momentum, signal, cut, n, bins, mcpHistogram,
+      "same", "#nu MC");         
    ss << "eff_mom_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
@@ -163,8 +167,12 @@ void DrawTrackAngleEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.SetTitleX("cos(Track Angle)");
    std::ostringstream ss;
 
-   draw.DrawEfficiency(rdp, angle, signal, cut, n, bins, "", "#nu Data");
-   draw.DrawEfficiency(mcp, angle, signal, cut, n, bins, "same", "#nu MC");         
+   TH1F rdpHistogram("", "", n, bins);
+   draw.PlotEfficiency(rdp, angle, signal, cut, n, bins, rdpHistogram, "",
+      "#nu Data");
+   TH1F mcpHistogram("", "", n, bins);
+   draw.PlotEfficiency(mcp, angle, signal, cut, n, bins, mcpHistogram, "same",
+      "#nu MC");         
    ss << "eff_ang_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
@@ -180,7 +188,9 @@ void DrawMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.SetTitleY("Systematic Uncertainty");
    std::ostringstream ss;
 
-   draw.CalculateSystematic(rdp, mcp, momentum, signal, cut, n, bins, "e1", "#nu");
+   TH1F histogram("", "", n, bins);
+   draw.PlotSystematic(rdp, mcp, momentum, signal, cut, n, bins, histogram,
+      "e1", "#nu");
    ss << "syst_mom_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
@@ -196,7 +206,9 @@ void DrawTrackAngleSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.SetTitleY("Systematic Uncertainty");
    std::ostringstream ss;
 
-   draw.CalculateSystematic(rdp, mcp, angle, signal, cut, n, bins, "e1", "#nu");
+   TH1F histogram("", "", n, bins);
+   draw.PlotSystematic(rdp, mcp, angle, signal, cut, n, bins, histogram,
+      "e1", "#nu");
    ss << "syst_ang_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
