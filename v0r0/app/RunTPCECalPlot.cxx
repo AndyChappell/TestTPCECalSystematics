@@ -103,10 +103,10 @@ DataSample GetDataSample(std::string filename)
    return data;
 }
 
-void DrawMomentumSelection(DrawingToolsTPCECal& draw, TCanvas* c1, DataSample& rdp,
-   DataSample& mcp, std::string& momentum, int n, double* bins,
-   const std::string& signal,
-   const std::string& detector, const std::string& particle)
+void DrawMomentumSelection(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& momentum, int n, double* bins,
+   const std::string& signal, const std::string& detector,
+   const std::string& particle)
 {
    draw.SetLegendSize(0.2, 0.4);
    draw.SetLegendPos("tr");
@@ -116,6 +116,56 @@ void DrawMomentumSelection(DrawingToolsTPCECal& draw, TCanvas* c1, DataSample& r
 
    draw.Draw(rdp, mcp, momentum, n, bins, "particle", signal);    
    ss << "sel_mom_" << detector << "_" << particle << ".png";
+   c1->Print(ss.str().c_str(), "png");
+}
+
+void DrawTrackAngleSelection(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& angle, int n, double* bins,
+   const std::string& signal, const std::string& detector,
+   const std::string& particle)
+{
+   draw.SetLegendSize(0.2, 0.4);
+   draw.SetLegendPos("tl");
+   draw.SetTitleX("cos(Track Angle)");
+   draw.SetTitleY("Counts/Bin");
+   std::ostringstream ss;
+
+   draw.Draw(rdp, mcp, angle, n, bins, "particle", signal);    
+   ss << "sel_ang_" << detector << "_" << particle << ".png";
+   c1->Print(ss.str().c_str(), "png");
+}
+
+void DrawMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& momentum, int n, double* bins,
+   const std::string& signal, const std::string& cut,
+   const std::string& detector, const std::string& particle)
+{
+   draw.SetLegendSize(0.15, 0.1);
+   draw.SetLegendPos("br");
+   draw.SetTitleY("Matching Efficiency");
+   draw.SetTitleX("Track Momentum (MeV)");
+   std::ostringstream ss;
+
+   draw.DrawEfficiency(rdp, momentum, signal, cut, n, bins, "", "#nu Data");
+   draw.DrawEfficiency(mcp, momentum, signal, cut, n, bins, "same", "#nu MC");         
+   ss << "eff_mom_" << detector << "_" << particle << ".png";
+   c1->Print(ss.str().c_str(), "png");
+}
+
+void DrawTrackAngleEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& angle, int n, double* bins,
+   const std::string& signal, const std::string& cut,
+   const std::string& detector, const std::string& particle)
+{
+   draw.SetLegendSize(0.15, 0.1);
+   draw.SetLegendPos("br");
+   draw.SetTitleY("Matching Efficiency");
+   draw.SetTitleX("cos(Track Angle)");
+   std::ostringstream ss;
+
+   draw.DrawEfficiency(rdp, angle, signal, cut, n, bins, "", "#nu Data");
+   draw.DrawEfficiency(mcp, angle, signal, cut, n, bins, "same", "#nu MC");         
+   ss << "eff_ang_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
 
@@ -181,62 +231,22 @@ int main(int argc, char *argv[])
          isBarrel, "br", nu_particle[i]);
 
       // Track angle selections
-      draw.SetLegendPos("tl");
-      draw.SetTitleX("cos(Track Angle)");
-      draw.SetTitleY("Counts/Bin");
-
-      draw.Draw(rdp, mcp, angle, nds_ang, ds_bins_ang, "particle",
-         isDownstream + " && " + recoDS);
-      ss.str(""); ss.clear();
-      ss << "sel_ang_br_" << nu_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
-
-      draw.Draw(rdp, mcp, angle, nbr_ang, br_bins_ang, "particle",
-         isBarrel);
-      ss.str(""); ss.clear();
-      ss << "sel_ang_br_" << nu_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
+      DrawTrackAngleSelection(draw, c1, rdp, mcp, angle, nds_ang, ds_bins_ang,
+         isDownstream, "ds", nu_particle[i]);
+      DrawTrackAngleSelection(draw, c1, rdp, mcp, angle, nbr_ang, br_bins_ang,
+         isBarrel, "br", nu_particle[i]);
 
       // Momentum effiencies
-      draw.SetLegendSize(0.15, 0.1);
-      draw.SetLegendPos("br");
-      draw.SetTitleY("Matching Efficiency");
-      draw.SetTitleX("Track Momentum (MeV)");
-
-      draw.DrawEfficiency(rdp, momentum, isDownstream, recoDS, nds_mom,
-         ds_bins_mom, "", "#nu Data");
-      draw.DrawEfficiency(mcp, momentum, isDownstream, recoDS, nds_mom,
-         ds_bins_mom, "same", "#nu MC");         
-      ss.str(""); ss.clear();
-      ss << "eff_mom_ds_" << nu_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
-
-      draw.DrawEfficiency(rdp, momentum, isBarrel, recoBr, nbr_mom,
-         br_bins_mom, "", "#nu Data");
-      draw.DrawEfficiency(mcp, momentum, isBarrel, recoBr, nbr_mom,
-         br_bins_mom, "same", "#nu MC");         
-      ss.str(""); ss.clear();
-      ss << "eff_mom_br_" << nu_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
+      DrawMomentumEfficiencies(draw, c1, rdp, mcp, momentum, nds_mom, ds_bins_mom,
+         isDownstream, recoDS, "ds", nu_particle[i]);
+      DrawMomentumEfficiencies(draw, c1, rdp, mcp, momentum, nbr_mom, br_bins_mom,
+         isBarrel, recoBr, "br", nu_particle[i]);
 
       // Track angle effiencies
-      draw.SetTitleX("cos(Track Angle)");
-      
-      draw.DrawEfficiency(rdp, angle, isDownstream, recoDS, nds_ang,
-         ds_bins_ang, "", "#nu Data");
-      draw.DrawEfficiency(mcp, momentum, isDownstream, recoDS, nds_ang,
-         ds_bins_ang, "same", "#nu MC");
-      ss.str(""); ss.clear();
-      ss << "eff_ang_ds_" << nu_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
-
-      draw.DrawEfficiency(rdp, momentum, isBarrel, recoBr, nbr_ang,
-         br_bins_ang, "", "#nu Data");
-      draw.DrawEfficiency(mcp, momentum, isBarrel, recoBr, nbr_ang,
-         br_bins_ang, "same", "#nu MC");         
-      ss.str(""); ss.clear();
-      ss << "eff_ang_br_" << nu_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
+      DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, nds_ang, ds_bins_ang,
+         isDownstream, recoDS, "ds", nu_particle[i]);
+      DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, nbr_ang, br_bins_ang,
+         isBarrel, recoBr, "br", nu_particle[i]);
    }  
 
    // nubar mode
@@ -263,62 +273,22 @@ int main(int argc, char *argv[])
          isBarrel, "br", nubar_particle[i]);
 
       // Track angle selections
-      draw.SetLegendPos("tl");
-      draw.SetTitleX("cos(Track Angle)");
-      draw.SetTitleY("Counts/Bin");
-
-      draw.Draw(rdp, mcp, angle, nds_ang, ds_bins_ang, "particle",
-         isDownstream);
-      ss.str(""); ss.clear();
-      ss << "sel_ang_br_" << nubar_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
-
-      draw.Draw(rdp, mcp, angle, nbr_ang, br_bins_ang, "particle",
-         isBarrel);
-      ss.str(""); ss.clear();
-      ss << "sel_ang_br_" << nubar_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
+      DrawTrackAngleSelection(draw, c1, rdp, mcp, angle, nds_ang, ds_bins_ang,
+         isDownstream, "ds", nubar_particle[i]);
+      DrawTrackAngleSelection(draw, c1, rdp, mcp, angle, nbr_ang, br_bins_ang,
+         isBarrel, "br", nubar_particle[i]);
 
       // Momentum effiencies
-      draw.SetLegendSize(0.15, 0.1);
-      draw.SetLegendPos("br");
-      draw.SetTitleY("Matching Efficiency");
-      draw.SetTitleX("Track Momentum (MeV)");
-
-      draw.DrawEfficiency(rdp, momentum, isDownstream, recoDS, nds_mom,
-         ds_bins_mom, "", "#nu Data");
-      draw.DrawEfficiency(mcp, momentum, isDownstream, recoDS, nds_mom,
-         ds_bins_mom, "same", "#nu MC");         
-      ss.str(""); ss.clear();
-      ss << "eff_mom_ds_" << nubar_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
-
-      draw.DrawEfficiency(rdp, momentum, isBarrel, recoBr, nbr_mom,
-         br_bins_mom, "", "#nu Data");
-      draw.DrawEfficiency(mcp, momentum, isBarrel, recoBr, nbr_mom,
-         br_bins_mom, "same", "#nu MC");         
-      ss.str(""); ss.clear();
-      ss << "eff_mom_br_" << nubar_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
+      DrawMomentumEfficiencies(draw, c1, rdp, mcp, momentum, nds_mom, ds_bins_mom,
+         isDownstream, recoDS, "ds", nubar_particle[i]);
+      DrawMomentumEfficiencies(draw, c1, rdp, mcp, momentum, nbr_mom, br_bins_mom,
+         isBarrel, recoBr, "br", nubar_particle[i]);
 
       // Track angle effiencies
-      draw.SetTitleX("cos(Track Angle)");
-      
-      draw.DrawEfficiency(rdp, angle, isDownstream, recoDS, nds_ang,
-         ds_bins_ang, "", "#nu Data");
-      draw.DrawEfficiency(mcp, momentum, isDownstream, recoDS, nds_ang,
-         ds_bins_ang, "same", "#nu MC");
-      ss.str(""); ss.clear();
-      ss << "eff_ang_ds_" << nubar_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
-
-      draw.DrawEfficiency(rdp, momentum, isBarrel, recoBr, nbr_ang,
-         br_bins_ang, "", "#nu Data");
-      draw.DrawEfficiency(mcp, momentum, isBarrel, recoBr, nbr_ang,
-         br_bins_ang, "same", "#nu MC");         
-      ss.str(""); ss.clear();
-      ss << "eff_ang_br_" << nubar_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
+      DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, nds_ang, ds_bins_ang,
+         isDownstream, recoDS, "ds", nubar_particle[i]);
+      DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, nbr_ang, br_bins_ang,
+         isBarrel, recoBr, "br", nubar_particle[i]);
    }
 
    delete c1;
