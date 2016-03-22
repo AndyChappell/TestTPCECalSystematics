@@ -140,6 +140,54 @@ vector<double> DrawingToolsTPCECal::GetEfficiencyVsBin(DataSample& data,
    return efficiencies;
 }
 
+void DrawingToolsTPCECal::CalculateSystematic(DataSample& rdp, DataSample& mcp,
+   const std::string& var, const std::string& signal, const std::string& cut,
+   int nx, double* xbins, const string& opt, const string& leg)
+{
+   vector<double> data_errs(nx);
+   vector<double> mc_errs(nx);
+
+   vector<double> data_eff = GetEfficiencyVsBin(rdp, var, signal, cut, nx,
+      xbins, &data_errs);
+   vector<double> mc_eff = GetEfficiencyVsBin(mcp, var, signal, cut, nx, xbins,
+      &mc_errs);
+
+   double FillVar = 0;
+
+   TH1F *hist = new TH1F("", "", nx, xbins);
+   for(int i = 0; i < nx; i++)
+   {
+      // Difference in data and MC squared + errors squared.
+      FillVar = sqrt((data_eff.at(i) - mc_eff.at(i)) *
+         (data_eff.at(i) - mc_eff.at(i)) + mc_errs.at(i) * mc_errs.at(i) +
+         data_errs.at(i)*data_errs.at(i));
+
+      // Not -nan or inf
+      if(FillVar == FillVar && !isinf(FillVar))
+      {
+         hist->SetBinContent(i+1, FillVar);
+         // Don't want errors drawn to systematics plots.
+         hist->SetBinError(i+1, 0.0000001);
+         cout << "For bin: " << xbins[i] << " - " << xbins[i + 1] <<
+            ", uncertainty = " << FillVar << endl;
+      }
+      else
+      {
+         cout << "Error in bin " << xbins[i] << " - " << xbins[i + 1] <<
+            " inf or nan propagated!" << endl;
+         cout << "data eff = " << data_eff.at(i) << " +/- " <<
+            data_errs.at(i) << ", mc eff = " << mc_eff.at(i) << " +/- " <<
+            mc_errs.at(i) << endl;
+         hist->SetBinContent(i+1, 0);
+         hist->SetBinError(i+1, 0.0000001);
+      }
+   }
+
+   hist->SetMinimum(0);
+   DrawPlot(hist, opt, leg);
+   gPad->Update();
+}
+
 void DrawingToolsTPCECal::DrawPlot(TH1* hist,
    const std::string& opt, const std::string& leg)
 {

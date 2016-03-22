@@ -52,6 +52,23 @@ public:
       vector<double> *lerr = 0, vector<double> *herr = 0);
 
    /**
+      Calculates the 1D systematic uncertainty for the data samples.
+      
+      \param rdp  The real data sample for which systematcis are to be calculated.
+      \param mcp  The MC data sample for which systematcis are to be calculated.
+      \param var  The binning variable.
+      \param signal  The signal.
+      \param cut  The cut.
+      \param nx   The number of bins.
+      \param xbins   The bin boundaries.
+      \param opt  Root plotting options
+      \param leg  The legend.
+   */
+   void CalculateSystematic(DataSample& rdp, DataSample& mcp, const string& var,
+      const string& signal, const string& cut, int nx, double* xbins,
+      const string& opt = "", const string& leg = "");
+
+   /**
       Draws a histogram.
 
       \param histogram  The histogram to be drawn.

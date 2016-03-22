@@ -169,6 +169,38 @@ void DrawTrackAngleEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    c1->Print(ss.str().c_str(), "png");
 }
 
+void DrawMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& momentum, int n, double* bins,
+   const std::string& signal, const std::string& cut,
+   const std::string& detector, const std::string& particle)
+{
+   draw.SetLegendSize(0.15, 0.1);
+   draw.SetLegendPos("br");
+   draw.SetTitleX("Track Momentum (MeV)");
+   draw.SetTitleY("Systematic Uncertainty");
+   std::ostringstream ss;
+
+   draw.CalculateSystematic(rdp, mcp, momentum, signal, cut, n, bins, "e1", "#nu");
+   ss << "syst_mom_" << detector << "_" << particle << ".png";
+   c1->Print(ss.str().c_str(), "png");
+}
+
+void DrawTrackAngleSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& angle, int n, double* bins,
+   const std::string& signal, const std::string& cut,
+   const std::string& detector, const std::string& particle)
+{
+   draw.SetLegendSize(0.15, 0.1);
+   draw.SetLegendPos("br");
+   draw.SetTitleX("cos(Track Angle)");
+   draw.SetTitleY("Systematic Uncertainty");
+   std::ostringstream ss;
+
+   draw.CalculateSystematic(rdp, mcp, angle, signal, cut, n, bins, "e1", "#nu");
+   ss << "syst_ang_" << detector << "_" << particle << ".png";
+   c1->Print(ss.str().c_str(), "png");
+}
+
 int main(int argc, char *argv[])
 {
    vecstr nu_rdp_files;
@@ -247,6 +279,18 @@ int main(int argc, char *argv[])
          isDownstream, recoDS, "ds", nu_particle[i]);
       DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, nbr_ang, br_bins_ang,
          isBarrel, recoBr, "br", nu_particle[i]);
+
+      // Momentum systematics
+      DrawMomentumSystematics(draw, c1, rdp, mcp, momentum, nds_mom, ds_bins_mom,
+         isDownstream, recoDS, "ds", nu_particle[i]);
+      DrawMomentumSystematics(draw, c1, rdp, mcp, momentum, nbr_mom, br_bins_mom,
+         isBarrel, recoBr, "br", nu_particle[i]);
+
+      // Track angle systematics
+      DrawTrackAngleSystematics(draw, c1, rdp, mcp, angle, nds_ang, ds_bins_ang,
+         isDownstream, recoDS, "ds", nu_particle[i]);
+      DrawTrackAngleSystematics(draw, c1, rdp, mcp, angle, nbr_ang, br_bins_ang,
+         isBarrel, recoBr, "br", nu_particle[i]);
    }  
 
    // nubar mode
@@ -288,6 +332,18 @@ int main(int argc, char *argv[])
       DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, nds_ang, ds_bins_ang,
          isDownstream, recoDS, "ds", nubar_particle[i]);
       DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, nbr_ang, br_bins_ang,
+         isBarrel, recoBr, "br", nubar_particle[i]);
+
+      // Momentum systematics
+      DrawMomentumSystematics(draw, c1, rdp, mcp, momentum, nds_mom, ds_bins_mom,
+         isDownstream, recoDS, "ds", nubar_particle[i]);
+      DrawMomentumSystematics(draw, c1, rdp, mcp, momentum, nbr_mom, br_bins_mom,
+         isBarrel, recoBr, "br", nubar_particle[i]);
+
+      // Track angle systematics
+      DrawTrackAngleSystematics(draw, c1, rdp, mcp, angle, nds_ang, ds_bins_ang,
+         isDownstream, recoDS, "ds", nubar_particle[i]);
+      DrawTrackAngleSystematics(draw, c1, rdp, mcp, angle, nbr_ang, br_bins_ang,
          isBarrel, recoBr, "br", nubar_particle[i]);
    }
 
