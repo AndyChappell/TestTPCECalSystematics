@@ -93,14 +93,11 @@ vector<double> DrawingToolsTPCECal::GetEfficiencyVsBin(DataSample& data,
 
    for(int i = 1; i < nx + 1; i++)
    {
-      std::cout << "Bin " << i << ": Sel = " << selec->GetBinContent(i) <<
-         "   Tot = " << total->GetBinContent(i) << "   Eff = ";
       if(total->GetBinContent(i) != 0)
       {
          efficiencies.at(i-1) = selec->GetBinContent(i) /
             total->GetBinContent(i);
       }
-      std::cout << efficiencies.at(i-1) << std::endl;
 
       // Sort out errors.
       if(!lerr && !herr)

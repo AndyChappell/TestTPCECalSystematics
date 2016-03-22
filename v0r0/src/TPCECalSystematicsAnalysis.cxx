@@ -146,26 +146,6 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
          det = SubDetId::kTECAL;
       }
 
-      if(tpcECalBox->entersBarrel)
-      {
-         if(tpcECalBox->isMuonLike)
-         {
-            std::cout << "Muon entering barrel has reco barrel? " <<
-               (IsBarrelECal(track->Detector) ? "Yes - " : "No") <<
-               (IsBarrelECal(track->Detector) ? det : 0) << std::endl;
-         }
-      }
-      else if(tpcECalBox->entersDownstream)
-      {
-         if(tpcECalBox->isMuonLike)
-         {
-            std::cout << "Muon entering downstream has reco downstream? " <<
-               (IsDSECal(track->Detector) ? "Yes" : "No") << " T (" <<
-               (IsBarrelECal(track->Detector)) << ") - " <<
-               (IsBarrelECal(track->Detector) ? det : 0) << std::endl;
-         }
-      }
-
       output().FillVar(ecalDetector, det);
       output().FillVar(isMuonLike, tpcECalBox->isMuonLike);
       output().FillVar(isAntiMuonLike, tpcECalBox->isAntiMuonLike);

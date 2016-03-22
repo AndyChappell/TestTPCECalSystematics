@@ -2,25 +2,46 @@
 
 typedef std::vector<std::string> vecstr;
 
-int main(int argc, char *argv[])
+const vecstr GetEnvironmentVariables(bool mcp, bool nubarMode)
 {
-   vecstr nuRdpEnvVars;
-   nuRdpEnvVars.push_back("E_RDP_FILE");
-   nuRdpEnvVars.push_back("MU_RDP_FILE");
-   nuRdpEnvVars.push_back("P_RDP_FILE");
-   vecstr nuMcpEnvVars;
-   nuMcpEnvVars.push_back("E_MCP_FILE");
-   nuMcpEnvVars.push_back("MU_MCP_FILE");
-   nuMcpEnvVars.push_back("P_MCP_FILE");
-   vecstr nubarRdpEnvVars;
-   nubarRdpEnvVars.push_back("EBAR_RDP_FILE");
-   nubarRdpEnvVars.push_back("MUBAR_RDP_FILE");
-   vecstr nubarMcpEnvVars;
-   nubarMcpEnvVars.push_back("EBAR_MCP_FILE");
-   nubarMcpEnvVars.push_back("MUBAR_MCP_FILE");
+   vecstr envVars;
+   if(nubarMode)
+   {  // nubar mode data
+      if(mcp)
+      {  // MCP data
+         envVars.push_back("EBAR_MCP_FILE");
+         envVars.push_back("MUBAR_MCP_FILE");
+      }
+      else
+      {  // RDP data
+         envVars.push_back("EBAR_RDP_FILE");
+         envVars.push_back("MUBAR_RDP_FILE");
+      }
+   }
+   else
+   {  // nu mode data
+      if(mcp)
+      {  // MCP data
+         envVars.push_back("E_MCP_FILE");
+         envVars.push_back("MU_MCP_FILE");
+         envVars.push_back("P_MCP_FILE");
+      }
+      else
+      {  // RDP data
+         envVars.push_back("E_RDP_FILE");
+         envVars.push_back("MU_RDP_FILE");
+         envVars.push_back("P_RDP_FILE");
+      }
+   }
+   
+   return envVars;
+}
 
-   vecstr nu_rdp_files;
-   vecstr nu_mcp_files;
+void GetNuModeFilenames(vecstr& rdpFiles, vecstr& mcpFiles)
+{
+   vecstr nuRdpEnvVars = GetEnvironmentVariables(false, false);
+   vecstr nuMcpEnvVars = GetEnvironmentVariables(true, false);
+   
    for(unsigned int i = 0; i < nuRdpEnvVars.size(); ++i)
    {
       std::string filename = std::string(getenv(nuRdpEnvVars[i].c_str()));
@@ -30,7 +51,7 @@ int main(int argc, char *argv[])
             " not set. Exiting." << std::endl;
          exit(1);
       }
-      nu_rdp_files.push_back(filename);
+      rdpFiles.push_back(filename);
 
       filename = std::string(getenv(nuMcpEnvVars[i].c_str()));
       if(filename.length() == 0)
@@ -39,11 +60,15 @@ int main(int argc, char *argv[])
             " not set. Exiting." << std::endl;
          exit(1);
       }
-      nu_mcp_files.push_back(filename);
+      mcpFiles.push_back(filename);
    }
+}
 
-   vecstr nubar_rdp_files;
-   vecstr nubar_mcp_files;
+void GetNubarModeFilenames(vecstr& rdpFiles, vecstr& mcpFiles)
+{
+   vecstr nubarRdpEnvVars = GetEnvironmentVariables(false, true);
+   vecstr nubarMcpEnvVars = GetEnvironmentVariables(true, true);
+   
    for(unsigned int i = 0; i < nubarRdpEnvVars.size(); ++i)
    {
       std::string filename = std::string(getenv(nubarRdpEnvVars[i].c_str()));
@@ -53,7 +78,7 @@ int main(int argc, char *argv[])
             " not set. Exiting." << std::endl;
          exit(1);
       }
-      nubar_rdp_files.push_back(filename);
+      rdpFiles.push_back(filename);
 
       filename = std::string(getenv(nubarMcpEnvVars[i].c_str()));
       if(filename.length() == 0)
@@ -62,50 +87,48 @@ int main(int argc, char *argv[])
             " not set. Exiting." << std::endl;
          exit(1);
       }
-      nubar_mcp_files.push_back(filename);
+      mcpFiles.push_back(filename);
    }
+}
+
+DataSample GetDataSample(std::string filename)
+{
+   DataSample data(filename.c_str());
+   if(data.GetTree()->GetEntries() == 0)
+   {
+      std::cerr << "Error: Tree " << filename << " has no entries. Exiting." <<
+         std::endl;
+      exit(1);
+   }
+   return data;
+}
+
+void DrawMomentumSelection(DrawingToolsTPCECal& draw, TCanvas* c1, DataSample& rdp,
+   DataSample& mcp, std::string& momentum, int n, double* bins,
+   const std::string& signal,
+   const std::string& detector, const std::string& particle)
+{
+   draw.SetLegendSize(0.2, 0.4);
+   draw.SetLegendPos("tr");
+   draw.SetTitleX("Track Momentum (MeV)");
+   draw.SetTitleY("Counts/Bin");
+   std::ostringstream ss;
+
+   draw.Draw(rdp, mcp, momentum, n, bins, "particle", signal);    
+   ss << "sel_mom_" << detector << "_" << particle << ".png";
+   c1->Print(ss.str().c_str(), "png");
+}
+
+int main(int argc, char *argv[])
+{
+   vecstr nu_rdp_files;
+   vecstr nu_mcp_files;
+   GetNuModeFilenames(nu_rdp_files, nu_mcp_files);
+
+   vecstr nubar_rdp_files;
+   vecstr nubar_mcp_files;
+   GetNubarModeFilenames(nubar_rdp_files, nubar_mcp_files);
  
-   // Read the microtree files.
-   DataSample** rdp_nu = new DataSample*[nu_rdp_files.size()];
-   DataSample** mcp_nu = new DataSample*[nu_mcp_files.size()];
-   for(unsigned int i = 0; i < nu_rdp_files.size(); ++i)
-   {
-      rdp_nu[i] = new DataSample(nu_rdp_files[i].c_str());
-      if(rdp_nu[i]->GetTree()->GetEntries() == 0)
-      {
-         std::cerr << "Error: Tree " << nu_rdp_files[i] <<
-            " has no entries. Exiting." << std::endl;
-         exit(1);
-      }
-      mcp_nu[i] = new DataSample(nu_mcp_files[i].c_str());
-      if(mcp_nu[i]->GetTree()->GetEntries() == 0)
-      {
-         std::cerr << "Error: Tree " << nu_mcp_files[i] <<
-            " has no entries. Exiting." << std::endl;
-         exit(1);
-      }
-   }
-
-   DataSample** rdp_nubar = new DataSample*[nubar_rdp_files.size()];
-   DataSample** mcp_nubar = new DataSample*[nubar_mcp_files.size()];
-   for(unsigned int i = 0; i < nubar_rdp_files.size(); ++i)
-   {
-      rdp_nubar[i] = new DataSample(nubar_rdp_files[i].c_str());
-      if(rdp_nubar[i]->GetTree()->GetEntries() == 0)
-      {
-         std::cerr << "Error: Tree " << nubar_rdp_files[i] <<
-            " has no entries. Exiting." << std::endl;
-         exit(1);
-      }
-      mcp_nubar[i] = new DataSample(nubar_mcp_files[i].c_str());
-      if(mcp_nubar[i]->GetTree()->GetEntries() == 0)
-      {
-         std::cerr << "Error: Tree " << nubar_mcp_files[i] <<
-            " has no entries. Exiting." << std::endl;
-         exit(1);
-      }
-   }
-
    gStyle->SetOptStat(0);
 
    // DS ECal binning
@@ -139,47 +162,36 @@ int main(int argc, char *argv[])
    nu_particle.push_back("p");
    for(unsigned int i = 0; i < nu_rdp_files.size(); ++i)
    {
-      DataSample* rdp = rdp_nu[i];
-      DataSample* mcp = mcp_nu[i];
+      DataSample rdp = GetDataSample(nu_rdp_files[i]);
+      DataSample mcp = GetDataSample(nu_mcp_files[i]);
 
       DrawingToolsTPCECal draw(nu_mcp_files[i]);
 
       draw.SetDifferentStackFillStyles();
       draw.ApplyRange(false);
-      draw.DumpPOT(*rdp);
-      draw.DumpPOT(*mcp);
+      draw.DumpPOT(rdp);
+      draw.DumpPOT(mcp);
 
       std::ostringstream ss;
 
       // Momentum selections
-      draw.SetLegendSize(0.2, 0.4);
-      draw.SetLegendPos("tr");
-      draw.SetTitleX("Track Momentum (MeV)");
-      draw.SetTitleY("Counts/Bin");
-
-      draw.Draw(*rdp, *mcp, momentum, nds_mom, ds_bins_mom, "particle",
-         isDownstream);    
-      ss << "sel_mom_ds_" << nu_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
-      
-      draw.Draw(*rdp, *mcp, momentum, nbr_mom, br_bins_mom, "particle",
-         isBarrel);
-      ss.str(""); ss.clear();
-      ss << "sel_mom_br_" << nu_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
+      DrawMomentumSelection(draw, c1, rdp, mcp, momentum, nds_mom, ds_bins_mom,
+         isDownstream, "ds", nu_particle[i]);
+      DrawMomentumSelection(draw, c1, rdp, mcp, momentum, nbr_mom, br_bins_mom,
+         isBarrel, "br", nu_particle[i]);
 
       // Track angle selections
       draw.SetLegendPos("tl");
       draw.SetTitleX("cos(Track Angle)");
       draw.SetTitleY("Counts/Bin");
 
-      draw.Draw(*rdp, *mcp, angle, nds_ang, ds_bins_ang, "particle",
+      draw.Draw(rdp, mcp, angle, nds_ang, ds_bins_ang, "particle",
          isDownstream + " && " + recoDS);
       ss.str(""); ss.clear();
       ss << "sel_ang_br_" << nu_particle[i] << ".png";
       c1->Print(ss.str().c_str(), "png");
 
-      draw.Draw(*rdp, *mcp, angle, nbr_ang, br_bins_ang, "particle",
+      draw.Draw(rdp, mcp, angle, nbr_ang, br_bins_ang, "particle",
          isBarrel);
       ss.str(""); ss.clear();
       ss << "sel_ang_br_" << nu_particle[i] << ".png";
@@ -191,40 +203,36 @@ int main(int argc, char *argv[])
       draw.SetTitleY("Matching Efficiency");
       draw.SetTitleX("Track Momentum (MeV)");
 
-      draw.DrawEfficiency(*rdp, momentum, isDownstream, recoDS, nds_mom,
+      draw.DrawEfficiency(rdp, momentum, isDownstream, recoDS, nds_mom,
          ds_bins_mom, "", "#nu Data");
-      draw.DrawEfficiency(*mcp, momentum, isDownstream, recoDS, nds_mom,
+      draw.DrawEfficiency(mcp, momentum, isDownstream, recoDS, nds_mom,
          ds_bins_mom, "same", "#nu MC");         
       ss.str(""); ss.clear();
       ss << "eff_mom_ds_" << nu_particle[i] << ".png";
       c1->Print(ss.str().c_str(), "png");
 
-      std::cout << "********** Barrel Efficiency **********" << std::endl;
-      std::cout << "Data\n";
-      draw.DrawEfficiency(*rdp, momentum, isBarrel, recoBr, nbr_mom,
+      draw.DrawEfficiency(rdp, momentum, isBarrel, recoBr, nbr_mom,
          br_bins_mom, "", "#nu Data");
-      std::cout << "MC\n";
-      draw.DrawEfficiency(*mcp, momentum, isBarrel, recoBr, nbr_mom,
+      draw.DrawEfficiency(mcp, momentum, isBarrel, recoBr, nbr_mom,
          br_bins_mom, "same", "#nu MC");         
       ss.str(""); ss.clear();
       ss << "eff_mom_br_" << nu_particle[i] << ".png";
       c1->Print(ss.str().c_str(), "png");
-      std::cout << "********** End Barrel Efficiency **********" << std::endl;
 
       // Track angle effiencies
       draw.SetTitleX("cos(Track Angle)");
       
-      draw.DrawEfficiency(*rdp, angle, isDownstream, recoDS, nds_ang,
+      draw.DrawEfficiency(rdp, angle, isDownstream, recoDS, nds_ang,
          ds_bins_ang, "", "#nu Data");
-      draw.DrawEfficiency(*mcp, momentum, isDownstream, recoDS, nds_ang,
+      draw.DrawEfficiency(mcp, momentum, isDownstream, recoDS, nds_ang,
          ds_bins_ang, "same", "#nu MC");
       ss.str(""); ss.clear();
       ss << "eff_ang_ds_" << nu_particle[i] << ".png";
       c1->Print(ss.str().c_str(), "png");
 
-      draw.DrawEfficiency(*rdp, momentum, isBarrel, recoBr, nbr_ang,
+      draw.DrawEfficiency(rdp, momentum, isBarrel, recoBr, nbr_ang,
          br_bins_ang, "", "#nu Data");
-      draw.DrawEfficiency(*mcp, momentum, isBarrel, recoBr, nbr_ang,
+      draw.DrawEfficiency(mcp, momentum, isBarrel, recoBr, nbr_ang,
          br_bins_ang, "same", "#nu MC");         
       ss.str(""); ss.clear();
       ss << "eff_ang_br_" << nu_particle[i] << ".png";
@@ -237,46 +245,35 @@ int main(int argc, char *argv[])
    nubar_particle.push_back("mubar");
    for(unsigned int i = 0; i < nubar_rdp_files.size(); ++i)
    {
-      DataSample* rdp = rdp_nubar[i];
-      DataSample* mcp = mcp_nubar[i];
+      DataSample rdp = GetDataSample(nubar_rdp_files[i]);
+      DataSample mcp = GetDataSample(nubar_mcp_files[i]);
 
       DrawingToolsTPCECal draw(nu_mcp_files[i]);
       draw.SetDifferentStackFillStyles();
       draw.ApplyRange(false);
-      draw.DumpPOT(*rdp);
-      draw.DumpPOT(*mcp);
+      draw.DumpPOT(rdp);
+      draw.DumpPOT(mcp);
 
       std::ostringstream ss;
 
       // Momentum selections
-      draw.SetLegendSize(0.2, 0.4);
-      draw.SetLegendPos("tr");
-      draw.SetTitleX("Track Momentum (MeV)");
-      draw.SetTitleY("Counts/Bin");
-
-      draw.Draw(*rdp, *mcp, momentum, nds_mom, ds_bins_mom, "particle",
-         isDownstream);    
-      ss << "sel_mom_ds_" << nubar_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
-      
-      draw.Draw(*rdp, *mcp, momentum, nbr_mom, br_bins_mom, "particle",
-         isBarrel);
-      ss.str(""); ss.clear();
-      ss << "sel_mom_br_" << nubar_particle[i] << ".png";
-      c1->Print(ss.str().c_str(), "png");
+      DrawMomentumSelection(draw, c1, rdp, mcp, momentum, nds_mom, ds_bins_mom,
+         isDownstream, "ds", nubar_particle[i]);
+      DrawMomentumSelection(draw, c1, rdp, mcp, momentum, nbr_mom, br_bins_mom,
+         isBarrel, "br", nubar_particle[i]);
 
       // Track angle selections
       draw.SetLegendPos("tl");
       draw.SetTitleX("cos(Track Angle)");
       draw.SetTitleY("Counts/Bin");
 
-      draw.Draw(*rdp, *mcp, angle, nds_ang, ds_bins_ang, "particle",
+      draw.Draw(rdp, mcp, angle, nds_ang, ds_bins_ang, "particle",
          isDownstream);
       ss.str(""); ss.clear();
       ss << "sel_ang_br_" << nubar_particle[i] << ".png";
       c1->Print(ss.str().c_str(), "png");
 
-      draw.Draw(*rdp, *mcp, angle, nbr_ang, br_bins_ang, "particle",
+      draw.Draw(rdp, mcp, angle, nbr_ang, br_bins_ang, "particle",
          isBarrel);
       ss.str(""); ss.clear();
       ss << "sel_ang_br_" << nubar_particle[i] << ".png";
@@ -288,17 +285,17 @@ int main(int argc, char *argv[])
       draw.SetTitleY("Matching Efficiency");
       draw.SetTitleX("Track Momentum (MeV)");
 
-      draw.DrawEfficiency(*rdp, momentum, isDownstream, recoDS, nds_mom,
+      draw.DrawEfficiency(rdp, momentum, isDownstream, recoDS, nds_mom,
          ds_bins_mom, "", "#nu Data");
-      draw.DrawEfficiency(*mcp, momentum, isDownstream, recoDS, nds_mom,
+      draw.DrawEfficiency(mcp, momentum, isDownstream, recoDS, nds_mom,
          ds_bins_mom, "same", "#nu MC");         
       ss.str(""); ss.clear();
       ss << "eff_mom_ds_" << nubar_particle[i] << ".png";
       c1->Print(ss.str().c_str(), "png");
 
-      draw.DrawEfficiency(*rdp, momentum, isBarrel, recoBr, nbr_mom,
+      draw.DrawEfficiency(rdp, momentum, isBarrel, recoBr, nbr_mom,
          br_bins_mom, "", "#nu Data");
-      draw.DrawEfficiency(*mcp, momentum, isBarrel, recoBr, nbr_mom,
+      draw.DrawEfficiency(mcp, momentum, isBarrel, recoBr, nbr_mom,
          br_bins_mom, "same", "#nu MC");         
       ss.str(""); ss.clear();
       ss << "eff_mom_br_" << nubar_particle[i] << ".png";
@@ -307,17 +304,17 @@ int main(int argc, char *argv[])
       // Track angle effiencies
       draw.SetTitleX("cos(Track Angle)");
       
-      draw.DrawEfficiency(*rdp, angle, isDownstream, recoDS, nds_ang,
+      draw.DrawEfficiency(rdp, angle, isDownstream, recoDS, nds_ang,
          ds_bins_ang, "", "#nu Data");
-      draw.DrawEfficiency(*mcp, momentum, isDownstream, recoDS, nds_ang,
+      draw.DrawEfficiency(mcp, momentum, isDownstream, recoDS, nds_ang,
          ds_bins_ang, "same", "#nu MC");
       ss.str(""); ss.clear();
       ss << "eff_ang_ds_" << nubar_particle[i] << ".png";
       c1->Print(ss.str().c_str(), "png");
 
-      draw.DrawEfficiency(*rdp, momentum, isBarrel, recoBr, nbr_ang,
+      draw.DrawEfficiency(rdp, momentum, isBarrel, recoBr, nbr_ang,
          br_bins_ang, "", "#nu Data");
-      draw.DrawEfficiency(*mcp, momentum, isBarrel, recoBr, nbr_ang,
+      draw.DrawEfficiency(mcp, momentum, isBarrel, recoBr, nbr_ang,
          br_bins_ang, "same", "#nu MC");         
       ss.str(""); ss.clear();
       ss << "eff_ang_br_" << nubar_particle[i] << ".png";
@@ -325,21 +322,4 @@ int main(int argc, char *argv[])
    }
 
    delete c1;
-
-   for(unsigned int i = 0; i < nu_rdp_files.size(); ++i)
-   {
-      delete rdp_nu[i];
-      delete mcp_nu[i];
-   }
-
-   for(unsigned int i = 0; i < nubar_rdp_files.size(); ++i)
-   {
-      delete rdp_nubar[i];
-      delete mcp_nubar[i];
-   }
-
-   delete[] rdp_nu;
-   delete[] rdp_nubar;
-   delete[] mcp_nu;
-   delete[] mcp_nubar;
 }
