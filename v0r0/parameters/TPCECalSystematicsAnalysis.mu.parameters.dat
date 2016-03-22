@@ -1,0 +1,11 @@
+--- Cut levels --------
+ < TPCECalSystematicsAnalysis.MinAccumLevelToSave = 2 >   // minimum accum level to save the event
+
+--- Systematics --------
+ 
+--- Selections --------
+ < TPCECalSystematicsAnalysis.Selections.RunElectronSelection = 0 >
+ < TPCECalSystematicsAnalysis.Selections.RunMuonSelection = 1 >
+ < TPCECalSystematicsAnalysis.Selections.RunProtonSelection = 0 >
+ < TPCECalSystematicsAnalysis.Selections.RunAntiMuonSelection = 0 >
+ < TPCECalSystematicsAnalysis.Selections.RunPositronSelection = 0 >
