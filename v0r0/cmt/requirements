@@ -6,7 +6,7 @@ author nd280-software@mailman.t2k.org
 
 branches cmt src doc app 
 
-use baseTrackerAnalysis * highland2
+use baseAnalysis * highland2
 
 # Build methods to include.
 document doxygen doxygen -group=documentation src/*.cpp src/*.h src/*.hxx src/*.cxx ../doc/*.dox
@@ -35,6 +35,8 @@ library TPCECalSystematicsAnalysis *.cxx  ../dict/*.cxx
 library DrawingToolsTPCECal DrawingToolsTPCECal.cxx  ../dict/*.cxx
 
 application RunTPCECalSystematicsAnalysis ../app/RunTPCECalSystematicsAnalysis*.cxx
+
+application RunTPCECalPlot ../app/RunTPCECalPlot.cxx
 
 # tests
 document doxygen doxygen -group=documentation ../scripts/* ../doc/*.dox

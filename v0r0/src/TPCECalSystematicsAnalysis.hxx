@@ -1,10 +1,10 @@
 #ifndef TPCECalSystematicsAnalysis_h
 #define TPCECalSystematicsAnalysis_h
 
-#include "baseTrackerAnalysis.hxx"
+#include "baseAnalysis.hxx"
 #include "AnalysisUtils.hxx"
 
-class TPCECalSystematicsAnalysis: public baseTrackerAnalysis {
+class TPCECalSystematicsAnalysis: public baseAnalysis {
  public:
   TPCECalSystematicsAnalysis(AnalysisAlgorithm* ana=NULL);
   virtual ~TPCECalSystematicsAnalysis(){}
@@ -38,7 +38,7 @@ public:
    */
    enum enumStandardMicroTrees_TPCECalSystematicsAnalysis
    {
-      entersBarrel=enumStandardMicroTreesLast_baseTrackerAnalysis + 1,
+      entersBarrel=enumStandardMicroTreesLast_baseAnalysis + 1,
       entersDownstream,
       ecalDetector,
       isMuonLike,

@@ -9,6 +9,12 @@ base1=$HIGHLANDTOOLSROOT/$HIGHLANDTOOLSCONFIG
 base2=$PSYCHECOREROOT/$PSYCHECORECONFIG 
 base3=$PSYCHEUTILSROOT/$PSYCHEUTILSCONFIG 
 
+echo "rootm_setup"
+
+echo $base
+echo $base1
+echo $base2
+echo $base3
 
 if [[ -d $base ]]; then
   output=$base/libDrawingToolsTPCECal.rootmap

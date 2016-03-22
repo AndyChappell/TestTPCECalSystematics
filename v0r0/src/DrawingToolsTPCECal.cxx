@@ -9,6 +9,17 @@
 #include "TSystem.h"
 #include "TPaveText.h"
 
+double GetBinomialUncertainty(double numer, double denom)
+{
+   if(denom == 0)
+   {
+      return 0;
+   }
+
+   double frac = numer / denom;
+   return sqrt(frac * (1 - frac) / denom);
+}
+
 DrawingToolsTPCECal::DrawingToolsTPCECal(const string& file, bool useT2Kstyle):
    DrawingTools(file, useT2Kstyle)
 {
@@ -21,4 +32,154 @@ DrawingToolsTPCECal::DrawingToolsTPCECal(Experiment& exp, bool useT2Kstyle):
 {
    _treeForSystErrors = NULL;
    _range = false;
+}
+
+void DrawingToolsTPCECal::DrawEfficiency(DataSample& data, const string var,
+   const string& signal, const string& cut, int nx, double *xbins, string opt,
+   string leg, vector<double> *errors)
+{
+   vector<double> fillvar(nx);
+   vector<double> staterrors(nx);
+
+   fillvar = GetEfficiencyVsBin(data, var, signal, cut, nx, xbins, &staterrors);
+
+   TH1F *hist = new TH1F("", "", nx, xbins);
+
+   for(int i = 1; i < nx + 1; i++)
+   {
+      hist->SetBinContent(i, fillvar.at(i-1));
+      // Add systematic errors to statistical errors.
+      if(!isinf(staterrors.at(i-1)))
+      {
+         hist->SetBinError(i, staterrors.at(i-1));
+      }
+      else
+      {
+         hist->SetBinError(i, 0);
+      }
+      if(errors)
+      {
+         hist->SetBinError(i, hist->GetBinError(i) + errors->at(i-1));
+      }
+   }
+
+   hist->SetAxisRange(0,1.1,"Y");
+
+   DrawPlot(hist, opt, leg);
+   gPad->Update();
+}
+
+vector<double> DrawingToolsTPCECal::GetEfficiencyVsBin(DataSample& data,
+   const string var, const string& signal, const string& cut, int nx,
+   double *xbins, vector<double> *lerr, vector<double> *herr)
+{
+   if(lerr)
+   {
+      lerr->resize(nx);
+   }
+   if(herr)
+   {
+      herr->resize(nx);
+   }
+
+   vector<double> efficiencies(nx);
+   double temp = 0;
+   string sel = cut + " && " + signal;
+
+   TH1F* selec = DrawingToolsBase::GetHisto(data.GetTree(), "selec", var, nx,
+      xbins, sel, "", "", 1);
+   TH1F* total = DrawingToolsBase::GetHisto(data.GetTree(), "total", var, nx,
+      xbins, signal, "", "", 1);
+
+   for(int i = 1; i < nx + 1; i++)
+   {
+      std::cout << "Bin " << i << ": Sel = " << selec->GetBinContent(i) <<
+         "   Tot = " << total->GetBinContent(i) << "   Eff = ";
+      if(total->GetBinContent(i) != 0)
+      {
+         efficiencies.at(i-1) = selec->GetBinContent(i) /
+            total->GetBinContent(i);
+      }
+      std::cout << efficiencies.at(i-1) << std::endl;
+
+      // Sort out errors.
+      if(!lerr && !herr)
+      {
+         continue;
+      }
+      // Uncertainty in fraction
+      temp = GetBinomialUncertainty(selec->GetBinContent(i),
+         total->GetBinContent(i));
+
+      if(lerr && !herr)
+      {
+         lerr->at(i-1) = temp;
+         continue;
+      }
+
+      // Efficiency cannot be > 1 or < 0 so we limit the uncertainties.
+      if(temp + efficiencies.at(i-1) > 1)
+      {
+         herr->at(i-1) = 1 - efficiencies.at(i-1);
+      }
+      else
+      {
+         herr->at(i-1) = temp;
+      }
+
+      if(temp - efficiencies.at(i-1) < 0)
+      {
+         lerr->at(i-1) = efficiencies.at(i-1);
+      }
+      else
+      {
+         lerr->at(i-1) = temp;
+      }
+   }
+
+   delete total;
+   delete selec;
+
+   return efficiencies;
+}
+
+void DrawingToolsTPCECal::DrawPlot(TH1* hist,
+   const std::string& opt, const std::string& leg)
+{
+   bool same = (ToUpper(opt).find("SAME") != string::npos);
+
+   hist->GetXaxis()->SetTitle(_titleX.c_str());
+   hist->GetYaxis()->SetTitle(_titleY.c_str());
+   hist->SetTitle(_title.c_str());
+   if(_range)
+   {
+      hist->SetAxisRange(_min, _max, "Y");
+   }
+
+   if(same)
+   {
+      _same_level++;
+   }
+   else
+   {
+      _same_level = 0;
+   }
+
+   hist->SetLineColor(_auto_colors[_same_level]);
+   hist->SetFillColor(_auto_colors[_same_level]);
+   hist->SetMarkerColor(_auto_colors[_same_level]);
+   hist->SetMarkerStyle(_auto_markers[_same_level]);
+   gStyle->SetOptStat(0);
+
+   hist->Draw(opt.c_str());
+
+   if(leg != "")
+   {
+      if(!same)
+      {
+         CreateLegend();
+      }
+      _legends.back()->AddEntry(hist, leg.c_str(), "LE1P");
+      _legends.back()->Draw();
+   }
 }

@@ -11,14 +11,14 @@
 #include "baseToyMaker.hxx"
 #include "SubDetId.hxx"
 
-TPCECalSystematicsAnalysis::TPCECalSystematicsAnalysis(AnalysisAlgorithm* ana) : baseTrackerAnalysis(ana) {
+TPCECalSystematicsAnalysis::TPCECalSystematicsAnalysis(AnalysisAlgorithm* ana) : baseAnalysis(ana) {
   // Add the package version (to be stored in the "config" tree)
   ND::versioning().AddPackage("TPCECalSystematicsAnalysis", anaUtils::GetSoftwareVersionFromPath((std::string)getenv("TPCECALSYSTEMATICSANALYSISROOT")));
 }
 
 bool TPCECalSystematicsAnalysis::Initialize(){
   // Initialize the base class
-  if (!baseTrackerAnalysis::Initialize()) return false;
+  if (!baseAnalysis::Initialize()) return false;
 
   // Define categories
   ND::categ().AddStandardCategories();
@@ -71,17 +71,17 @@ void TPCECalSystematicsAnalysis::DefineSelections(){
 
 void TPCECalSystematicsAnalysis::DefineCorrections(){
   // Some corrections are defined in baseTrackerAnalysis (have a look at baseTrackerAnalysis/vXrY/src/baseTrackerAnalysis.cxx)
-  baseTrackerAnalysis::DefineCorrections();
+  baseAnalysis::DefineCorrections();
 }
 
 void TPCECalSystematicsAnalysis::DefineSystematics(){
   // Some systematics are defined in baseTrackerAnalysis (have a look at baseTrackerAnalysis/vXrY/src/baseTrackerAnalysis.cxx)
-  baseTrackerAnalysis::DefineSystematics();
+  baseAnalysis::DefineSystematics();
 }
 
 void TPCECalSystematicsAnalysis::DefineConfigurations(){
   // Some configurations are defined in baseTrackerAnalysis (have a look at baseTrackerAnalysis/vXrY/src/baseTrackerAnalysis.cxx)
-  baseTrackerAnalysis::DefineConfigurations();
+  baseAnalysis::DefineConfigurations();
 }
 
 void TPCECalSystematicsAnalysis::DefineMicroTrees(bool addBase)
@@ -89,7 +89,7 @@ void TPCECalSystematicsAnalysis::DefineMicroTrees(bool addBase)
    // Variables from baseTrackerAnalysis (run, event, ..., tracker related stuff, ...)
    if(addBase)
    {
-      baseTrackerAnalysis::DefineMicroTrees(addBase);
+      baseAnalysis::DefineMicroTrees(addBase);
    }
 
    // --- Single variables -------
@@ -112,7 +112,7 @@ void TPCECalSystematicsAnalysis::DefineMicroTrees(bool addBase)
 
 void TPCECalSystematicsAnalysis::DefineTruthTree(){
   // Variables from baseTrackerAnalysis (run, event, ...)
-  baseTrackerAnalysis::DefineTruthTree();
+  baseAnalysis::DefineTruthTree();
 
   //--- muon variables -------
   AddVarF(  output(), truemu_mom,      "true muon momentum");
@@ -124,7 +124,7 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
    // Variables from baseTrackerAnalysis (run, event, ...)
    if (addBase)
    {
-      baseTrackerAnalysis::FillMicroTreesBase(addBase);
+      baseAnalysis::FillMicroTreesBase(addBase);
    }
 
    const ToyBoxTPCECal* tpcECalBox = static_cast<const ToyBoxTPCECal*>(&box());
@@ -133,8 +133,8 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
    AnaTrackB* track = tpcECalBox->selectedTrack;
    if (track)
    {
-      output().FillVar(entersBarrel, tpcECalBox->entersBarrel);
-      output().FillVar(entersDownstream, tpcECalBox->entersDownstream);
+      output().FillVar(entersBarrel, tpcECalBox->entersBarrel ? 1 : 0);
+      output().FillVar(entersDownstream, tpcECalBox->entersDownstream ? 1 : 0);
 
       int det = SubDetId::kInvalid;
       if(IsDSECal(track->Detector))
@@ -144,6 +144,26 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
       else if(IsBarrelECal(track->Detector))
       {  // Barrel ECal
          det = SubDetId::kTECAL;
+      }
+
+      if(tpcECalBox->entersBarrel)
+      {
+         if(tpcECalBox->isMuonLike)
+         {
+            std::cout << "Muon entering barrel has reco barrel? " <<
+               (IsBarrelECal(track->Detector) ? "Yes - " : "No") <<
+               (IsBarrelECal(track->Detector) ? det : 0) << std::endl;
+         }
+      }
+      else if(tpcECalBox->entersDownstream)
+      {
+         if(tpcECalBox->isMuonLike)
+         {
+            std::cout << "Muon entering downstream has reco downstream? " <<
+               (IsDSECal(track->Detector) ? "Yes" : "No") << " T (" <<
+               (IsBarrelECal(track->Detector)) << ") - " <<
+               (IsBarrelECal(track->Detector) ? det : 0) << std::endl;
+         }
       }
 
       output().FillVar(ecalDetector, det);
@@ -164,7 +184,7 @@ void TPCECalSystematicsAnalysis::FillMicroTrees(bool addBase)
 
 void TPCECalSystematicsAnalysis::FillToyVarsInMicroTrees(bool addBase){
   // Fill the common variables
-  if (addBase) baseTrackerAnalysis::FillToyVarsInMicroTreesBase(addBase);
+  if (addBase) baseAnalysis::FillToyVarsInMicroTreesBase(addBase);
 }
 
 bool TPCECalSystematicsAnalysis::CheckFillTruthTree(const AnaTrueVertex& vtx){
@@ -175,7 +195,7 @@ bool TPCECalSystematicsAnalysis::CheckFillTruthTree(const AnaTrueVertex& vtx){
 
 void TPCECalSystematicsAnalysis::FillTruthTree(const AnaTrueVertex& vtx){
   // Fill the common variables defined in baseTrackerAnalysis/vXrY/src/baseTrackerAnalysis.cxx
-  baseTrackerAnalysis::FillTruthTreeBase(vtx);
+  baseAnalysis::FillTruthTreeBase(vtx);
   
   // ---- Fill the extra variables ------
   output().FillVar(truemu_costheta,(Float_t)cos(utils::ArrayToTVector3(vtx.LeptonDir).Angle(utils::ArrayToTVector3(vtx.NuDir))));
