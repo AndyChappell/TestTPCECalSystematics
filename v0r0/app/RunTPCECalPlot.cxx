@@ -180,7 +180,7 @@ void PrintSummaryDataUnbinned(DrawingToolsTPCECal& draw, DataSample& rdp,
    const std::string& particle)
 {
    double bins[2] = {0, 100000};
-   vector<double> errors(1);
+   std::vector<double> errors(1);
 
    std::cout.setf(ios::fixed,ios::floatfield);
    std::cout.precision(3);
@@ -191,13 +191,43 @@ void PrintSummaryDataUnbinned(DrawingToolsTPCECal& draw, DataSample& rdp,
    double mcpEff = draw.GetEfficiency(mcp, momentum, signal, cut, 1, bins,
       &errors).at(0);
    double mcpErr = errors.at(0);
-
-   double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
-
    std::cout << particle << " : " << detector << std::endl;
    std::cout << "rdp eff    = " << rdpEff << " +/- " << rdpErr << std::endl;
    std::cout << "mcp eff    = " << mcpEff << " +/- " << mcpErr << std::endl;
+
+   double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
    std::cout << "systematic = " << systematic << std::endl << std::endl;
+}
+
+void PrintSummaryDataBinned(DrawingToolsTPCECal& draw, DataSample& rdp,
+   DataSample& mcp, const std::string& variable, int n, double* bins,
+   const std::string& signal, const std::string& cut,
+   const std::string& detector, const std::string& particle)
+{
+   std::vector<double> mcpErr(n);
+   std::vector<double> rdpErr(n);
+   
+   std::cout.setf(ios::fixed, ios::floatfield);
+   std::cout.precision(3);
+
+   std::vector<double> rdpEff = draw.GetEfficiency(rdp, variable, signal, cut,
+      n, bins, &rdpErr);
+   std::vector<double> mcpEff = draw.GetEfficiency(mcp, variable, signal, cut,
+      n, bins, &rdpErr);
+
+   std::cout << particle << " : " << detector << std::endl;
+   for(int i = 0; i < n; i++)
+   {
+      std::cout << "For bin: " << bins[i] << " - " << bins[i + 1] << std::endl;
+      std::cout << "rdp eff    = " << rdpEff[i] << " +/- " << rdpErr[i] <<
+         std::endl;
+      std::cout << "mcp eff    = " << mcpEff[i] << " +/- " << mcpErr[i] <<
+         std::endl;
+
+      double systematic = GetSystematic(rdpEff[i], mcpEff[i], rdpErr[i],
+         mcpErr[i]);
+      std::cout << "systematic = " << systematic << std::endl << std::endl;
+   }
 }
 
 int main(int argc, char *argv[])
@@ -287,7 +317,7 @@ int main(int argc, char *argv[])
          isBarrel, recoBr, "br", particle[i]);
    }  
 
-   // Print summary
+   // Print unbinned summary
    for(unsigned int i = 0; i < rdpFiles.size(); ++i)
    {
       DataSample rdp = GetDataSample(rdpFiles[i]);
@@ -299,6 +329,24 @@ int main(int argc, char *argv[])
          "Downstream", particle[i]);
       PrintSummaryDataUnbinned(draw, rdp, mcp, momentum, isBarrel, recoBr,
          "Barrel", particle[i]);
+   }
+
+   // Print binned summary
+   for(unsigned int i = 0; i < rdpFiles.size(); ++i)
+   {
+      DataSample rdp = GetDataSample(rdpFiles[i]);
+      DataSample mcp = GetDataSample(mcpFiles[i]);
+
+      DrawingToolsTPCECal draw(mcpFiles[i]);
+
+      PrintSummaryDataBinned(draw, rdp, mcp, momentum, nds_mom, ds_bins_mom,
+         isDownstream, recoDS, "Downstream", particle[i]);
+      PrintSummaryDataBinned(draw, rdp, mcp, momentum, nbr_mom, br_bins_mom,
+         isBarrel, recoBr, "Barrel", particle[i]);
+      PrintSummaryDataBinned(draw, rdp, mcp, angle, nds_ang, ds_bins_ang,
+         isDownstream, recoDS, "Downstream", particle[i]);
+      PrintSummaryDataBinned(draw, rdp, mcp, angle, nbr_ang, br_bins_ang,
+         isBarrel, recoBr, "Barrel", particle[i]);
    }
 
    delete c1;
