@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
    std::string momentum = "momentum";
    std::string angle = "direction[2]";
 
-   TCanvas* c1 = new TCanvas("c", "c", 600, 400);
+   TCanvas* c1 = new TCanvas("c", "c", 700, 500);
    
    vecstr particle;
    particle.push_back("e");

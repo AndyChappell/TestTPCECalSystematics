@@ -124,7 +124,7 @@ std::vector<double> DrawingToolsTPCECal::GetEfficiency(DataSample& data,
 
       double efficiency = efficiencies.at(i - 1);
       // Efficiency cannot be > 1 or < 0 so we limit the uncertainties.
-      if((uncertainty + efficiency) > 1)
+      if((efficiency + uncertainty) > 1)
       {
          herr->at(i - 1) = 1 - efficiency;
       }
@@ -133,7 +133,7 @@ std::vector<double> DrawingToolsTPCECal::GetEfficiency(DataSample& data,
          herr->at(i - 1) = uncertainty;
       }
 
-      if((uncertainty - efficiency) < 0)
+      if((efficiency - uncertainty) < 0)
       {
          lerr->at(i - 1) = efficiency;
       }
