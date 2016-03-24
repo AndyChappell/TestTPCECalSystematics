@@ -109,10 +109,10 @@ void DrawMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
 
    TH1F rdpHistogram("", "", n, bins);
    draw.PlotEfficiency(rdp, momentum, signal, cut, n, bins, rdpHistogram, "",
-      "#nu Data");
+      (particle.find("bar") == std::string::npos) ? "#nu Data" : "#bar{#nu} Data");
    TH1F mcpHistogram("", "", n, bins);
-   draw.PlotEfficiency(mcp, momentum, signal, cut, n, bins, mcpHistogram,
-      "same", "#nu MC");         
+   draw.PlotEfficiency(mcp, momentum, signal, cut, n, bins, mcpHistogram, "same",
+      (particle.find("bar") == std::string::npos) ? "#nu MC" : "#bar{#nu} MC");         
    ss << "eff_mom_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
@@ -130,10 +130,10 @@ void DrawTrackAngleEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
 
    TH1F rdpHistogram("", "", n, bins);
    draw.PlotEfficiency(rdp, angle, signal, cut, n, bins, rdpHistogram, "",
-      "#nu Data");
+      (particle.find("bar") == std::string::npos) ? "#nu Data" : "#bar{#nu} Data");
    TH1F mcpHistogram("", "", n, bins);
    draw.PlotEfficiency(mcp, angle, signal, cut, n, bins, mcpHistogram, "same",
-      "#nu MC");         
+      (particle.find("bar") == std::string::npos) ? "#nu MC" : "#bar{#nu} MC");
    ss << "eff_ang_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
@@ -143,7 +143,7 @@ void DrawMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    const std::string& signal, const std::string& cut,
    const std::string& detector, const std::string& particle)
 {
-   draw.SetLegendSize(0.15, 0.1);
+   draw.SetLegendSize(0.1, 0.05);
    draw.SetLegendPos("br");
    draw.SetTitleX("Track Momentum (MeV)");
    draw.SetTitleY("Systematic Uncertainty");
@@ -151,7 +151,7 @@ void DrawMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
 
    TH1F histogram("", "", n, bins);
    draw.PlotSystematic(rdp, mcp, momentum, signal, cut, n, bins, histogram,
-      "e1", "#nu");
+      "e1", (particle.find("bar") == std::string::npos) ? "#nu" : "#bar{#nu}");
    ss << "syst_mom_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
@@ -161,7 +161,7 @@ void DrawTrackAngleSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    const std::string& signal, const std::string& cut,
    const std::string& detector, const std::string& particle)
 {
-   draw.SetLegendSize(0.15, 0.1);
+   draw.SetLegendSize(0.1, 0.05);
    draw.SetLegendPos("br");
    draw.SetTitleX("cos(Track Angle)");
    draw.SetTitleY("Systematic Uncertainty");
@@ -169,7 +169,7 @@ void DrawTrackAngleSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
 
    TH1F histogram("", "", n, bins);
    draw.PlotSystematic(rdp, mcp, angle, signal, cut, n, bins, histogram,
-      "e1", "#nu");
+      "e1", (particle.find("bar") == std::string::npos) ? "#nu" : "#bar{#nu}");
    ss << "syst_ang_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
    std::string momentum = "momentum";
    std::string angle = "direction[2]";
 
-   TCanvas* c1 = new TCanvas("c", "c", 700, 500);
+   TCanvas* c1 = new TCanvas("c", "c");
    
    vecstr particle;
    particle.push_back("e");
