@@ -174,6 +174,23 @@ void DrawTrackAngleSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    c1->Print(ss.str().c_str(), "png");
 }
 
+void DrawPurity(DrawingToolsTPCECal& draw, TCanvas* c1, DataSample& mcp,
+   const std::string& detector, const std::string& particle,
+   const std::string& trueParticle, const int selection)
+{
+   draw.SetLegendSize(0.15, 0.1);
+   draw.SetLegendPos("tl");
+   draw.SetTitleX("Cut");
+   draw.SetTitleY("Purity/Efficiency");
+   std::ostringstream ss;
+
+   ss << "particle==" << trueParticle;
+   draw.DrawEffPurVSCut(mcp, selection, (detector == "ds") ? 0 : 1, ss.str(), "");
+   ss.str(""); ss.clear();
+   ss << "pur_" << detector << "_" << particle << ".png";
+   c1->Print(ss.str().c_str(), "png");
+}
+
 void PrintSummaryDataUnbinned(DrawingToolsTPCECal& draw, DataSample& rdp,
    DataSample& mcp, const std::string& momentum, const std::string& signal,
    const std::string& cut, const std::string& detector,
@@ -228,6 +245,29 @@ void PrintSummaryDataBinned(DrawingToolsTPCECal& draw, DataSample& rdp,
          mcpErr[i]);
       std::cout << "systematic = " << systematic << std::endl << std::endl;
    }
+}
+
+void PrintLaTeXSummaryDataUnbinned(DrawingToolsTPCECal& draw, DataSample& rdp,
+   DataSample& mcp, const std::string& momentum, const std::string& signal,
+   const std::string& cut, const std::string& detector,
+   const std::string& particle)
+{
+   double bins[2] = {0, 100000};
+   std::vector<double> errors(1);
+
+   std::cout.setf(ios::fixed,ios::floatfield);
+   std::cout.precision(3);
+
+   double rdpEff = draw.GetEfficiency(rdp, momentum, signal, cut, 1, bins,
+      &errors).at(0);
+   double rdpErr = errors.at(0);
+   double mcpEff = draw.GetEfficiency(mcp, momentum, signal, cut, 1, bins,
+      &errors).at(0);
+   double mcpErr = errors.at(0);
+   double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
+   std::cout << detector << " & " << particle << " & " << rdpEff << " & " <<
+      rdpErr << " & " << mcpEff << " & " << mcpErr << " & " << systematic <<
+      "\\\\" << std::endl;   
 }
 
 int main(int argc, char *argv[])
@@ -347,6 +387,39 @@ int main(int argc, char *argv[])
          isDownstream, recoDS, "Downstream", particle[i]);
       PrintSummaryDataBinned(draw, rdp, mcp, angle, nbr_ang, br_bins_ang,
          isBarrel, recoBr, "Barrel", particle[i]);
+   }
+
+   // Print LaTeX-friendly unbinned summary
+   for(unsigned int i = 0; i < rdpFiles.size(); ++i)
+   {
+      DataSample rdp = GetDataSample(rdpFiles[i]);
+      DataSample mcp = GetDataSample(mcpFiles[i]);
+
+      DrawingToolsTPCECal draw(mcpFiles[i]);
+
+      PrintLaTeXSummaryDataUnbinned(draw, rdp, mcp, momentum, isDownstream, recoDS,
+         "Downstream", particle[i]);
+      PrintLaTeXSummaryDataUnbinned(draw, rdp, mcp, momentum, isBarrel, recoBr,
+         "Barrel", particle[i]);
+   }
+
+   // Draw purities
+   vecstr trueParticle;
+   trueParticle.push_back("11");
+   trueParticle.push_back("13");
+   trueParticle.push_back("2212");
+   trueParticle.push_back("-11");
+   trueParticle.push_back("-13");
+   for(unsigned int i = 0; i < rdpFiles.size(); ++i)
+   {
+      DataSample mcp = GetDataSample(mcpFiles[i]);
+
+      DrawingToolsTPCECal draw(mcpFiles[i]);
+
+      DrawPurity(draw, c1, mcp, "ds", particle[i], 
+         trueParticle[i], i);
+      DrawPurity(draw, c1, mcp, "br", particle[i], 
+         trueParticle[i], i);
    }
 
    delete c1;
