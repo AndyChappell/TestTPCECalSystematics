@@ -58,6 +58,28 @@ public:
       std::vector<double>* lerr = 0, std::vector<double>* herr = 0);
 
    /**
+      Gets the combined 1D matching efficiency of data samples. Statistical
+      uncertainties are calculated using binomial statistics if the lowErrs and
+      highErrs variables are not used, otherwise the low and high errors are
+      filled from these vectors.
+      
+      \param data1   The first data sample.
+      \param data2   The second data sample.
+      \param variable   The binning variable.
+      \param signal  The signal.
+      \param cut  The cut.
+      \param numBins The number of bins.
+      \param bins   The bin boundaries.
+      \param lerr The lower errors.
+      \param herr The higher errors.
+      \return  A vector of the efficiencies.
+   */
+   std::vector<double> GetEfficiency(DataSample& data1, DataSample& data2,
+      const std::string& variable, const std::string& signal,
+      const std::string& cut, int numBins, double* bins,
+      std::vector<double>* lerr = 0, std::vector<double>* herr = 0);
+
+   /**
       Calculates the 1D systematic uncertainty for the data samples.
       
       \param rdp  The real data sample for which systematcis are to be calculated.
@@ -72,6 +94,28 @@ public:
       \param legend  The legend.
    */
    void PlotSystematic(DataSample& rdp, DataSample& mcp,
+      const std::string& variables, const std::string& signal,
+      const std::string& cut, int numBins, double* bins, TH1F& histogram,
+      const std::string& options = "", const std::string& legend = "");
+
+   /**
+      Calculates the 1D systematic uncertainty for combined nu and nubar samples.
+      
+      \param nuRdp   The nu mode real data sample for which systematcis are to be calculated.
+      \param nubarRdp   The nubar mode real data sample for which systematcis are to be calculated.
+      \param nuMcp   The nu mode MC data sample for which systematcis are to be calculated.
+      \param nubarMcp   The nubar mode MC data sample for which systematcis are to be calculated.
+      \param variable   The binning variable.
+      \param signal  The signal.
+      \param cut  The cut.
+      \param numBins The number of bins.
+      \param bins The bin boundaries.
+      \param histogram  The histogram to be filled.
+      \param options Root plotting options
+      \param legend  The legend.
+   */
+   void PlotSystematic(DataSample& nuRdp, DataSample& nubarRdp,
+      DataSample& nuMcp, DataSample& nubarMcp,
       const std::string& variables, const std::string& signal,
       const std::string& cut, int numBins, double* bins, TH1F& histogram,
       const std::string& options = "", const std::string& legend = "");

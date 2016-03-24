@@ -149,6 +149,92 @@ std::vector<double> DrawingToolsTPCECal::GetEfficiency(DataSample& data,
    return efficiencies;
 }
 
+std::vector<double> DrawingToolsTPCECal::GetEfficiency(DataSample& data1,
+   DataSample& data2, const std::string& variable, const std::string& signal,
+   const std::string& cut, int numBins, double* bins, std::vector<double>* lerr,
+   std::vector<double>* herr)
+{
+   if(lerr)
+   {
+      lerr->resize(numBins);
+   }
+   if(herr)
+   {
+      herr->resize(numBins);
+   }
+
+   std::vector<double> efficiencies(numBins);
+   string sel = cut + " && " + signal;
+
+   TH1F* selec1 = DrawingToolsBase::GetHisto(data1.GetTree(), "selec", variable,
+      numBins, bins, sel, "", "", 1);
+   TH1F* total1 = DrawingToolsBase::GetHisto(data1.GetTree(), "total", variable,
+      numBins, bins, signal, "", "", 1);
+   TH1F* selec2 = DrawingToolsBase::GetHisto(data2.GetTree(), "selec", variable,
+      numBins, bins, sel, "", "", 1);
+   TH1F* total2 = DrawingToolsBase::GetHisto(data2.GetTree(), "total", variable,
+      numBins, bins, signal, "", "", 1);
+
+   selec1->Sumw2();
+   selec2->Sumw2();
+   TH1F selec = (*selec1) + (*selec2);
+
+   total1->Sumw2();
+   total2->Sumw2();
+   TH1F total = (*total1) + (*total2);
+
+   for(int i = 1; i < numBins + 1; i++)
+   {
+      double selecContent = selec.GetBinContent(i);
+      double totalContent = total.GetBinContent(i);
+      if(totalContent != 0)
+      {
+         efficiencies.at(i - 1) = selecContent / totalContent;
+      }
+
+      // Sort out errors.
+      if(!lerr && !herr)
+      {
+         continue;
+      }
+      // Uncertainty in fraction
+      double uncertainty = GetBinomialUncertainty(selecContent, totalContent);
+
+      if(lerr && !herr)
+      {
+         lerr->at(i - 1) = uncertainty;
+         continue;
+      }
+
+      double efficiency = efficiencies.at(i - 1);
+      // Efficiency cannot be > 1 or < 0 so we limit the uncertainties.
+      if((efficiency + uncertainty) > 1)
+      {
+         herr->at(i - 1) = 1 - efficiency;
+      }
+      else
+      {
+         herr->at(i - 1) = uncertainty;
+      }
+
+      if((efficiency - uncertainty) < 0)
+      {
+         lerr->at(i - 1) = efficiency;
+      }
+      else
+      {
+         lerr->at(i - 1) = uncertainty;
+      }
+   }
+
+   delete total1;
+   delete selec1;
+   delete total2;
+   delete selec2;
+
+   return efficiencies;
+}
+
 void DrawingToolsTPCECal::PlotSystematic(DataSample& rdp, DataSample& mcp,
    const std::string& variable, const std::string& signal,
    const std::string& cut, int numBins, double* bins, TH1F& histogram,
@@ -161,6 +247,46 @@ void DrawingToolsTPCECal::PlotSystematic(DataSample& rdp, DataSample& mcp,
       bins, &data_errs);
    std::vector<double> mc_eff = GetEfficiency(mcp, variable, signal, cut, numBins,
       bins, &mc_errs);
+
+   for(int i = 0; i < numBins; i++)
+   {
+      double systematic = GetSystematic(data_eff.at(i), mc_eff.at(i),
+         data_errs.at(i), mc_errs.at(i));
+
+      // Not -nan or inf
+      if(!isnan(systematic) && !isinf(systematic))
+      {
+         histogram.SetBinContent(i + 1, systematic);
+         // Don't want errors drawn to systematics plots.
+         histogram.SetBinError(i + 1, 0.0000001);
+      }
+      else
+      {
+         cout << "Error in bin " << bins[i] << " - " << bins[i + 1] <<
+            " inf or nan propagated!" << endl;
+         histogram.SetBinContent(i + 1, 0);
+         histogram.SetBinError(i + 1, 0.0000001);
+      }
+   }
+
+   histogram.SetMinimum(0);
+   Plot(histogram, options, legend);
+   gPad->Update();
+}
+
+void DrawingToolsTPCECal::PlotSystematic(DataSample& nuRdp, DataSample& nubarRdp,
+   DataSample& nuMcp, DataSample& nubarMcp,
+   const std::string& variable, const std::string& signal,
+   const std::string& cut, int numBins, double* bins, TH1F& histogram,
+   const std::string& options, const std::string& legend)
+{
+   std::vector<double> data_errs(numBins);
+   std::vector<double> mc_errs(numBins);
+
+   std::vector<double> data_eff = GetEfficiency(nuRdp, nubarRdp, variable, signal,
+      cut, numBins, bins, &data_errs);
+   std::vector<double> mc_eff = GetEfficiency(nuMcp, nubarMcp, variable, signal,
+      cut, numBins, bins, &mc_errs);
 
    for(int i = 0; i < numBins; i++)
    {
