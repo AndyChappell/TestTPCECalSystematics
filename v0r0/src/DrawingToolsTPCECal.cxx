@@ -13,7 +13,7 @@ double GetBinomialUncertainty(double numer, double denom)
 {
    if(denom == 0)
    {
-      return 0;
+      return 1;
    }
 
    double frac = numer / denom;
@@ -43,7 +43,7 @@ DrawingToolsTPCECal::DrawingToolsTPCECal(Experiment& exp, bool useT2Kstyle):
 
 void DrawingToolsTPCECal::PlotEfficiency(DataSample& data,
    const std::string& variable, const std::string& signal,
-   const std::string& cut, int numBins, double* bins, TH1F& histogram,
+   const std::string& cut, const int numBins, double* bins, TH1F& histogram,
    const std::string& options, const std::string& legend,
    std::vector<double>* errors)
 {
@@ -227,4 +227,47 @@ void DrawingToolsTPCECal::Plot(TH1& histogram, const std::string& options,
       _legends.back()->AddEntry(&histogram, legend.c_str(), "LE1P");
       _legends.back()->Draw();
    }
+}
+
+void DrawingToolsTPCECal::Plot(TMultiGraph& graph,
+   TGraphAsymmErrors& rdpGraph, TGraphAsymmErrors& mcpGraph,
+   const std::string& options, const std::vector<std::string>& legend)
+{
+   graph.Add(&rdpGraph);
+   graph.Add(&mcpGraph);
+
+   graph.Draw(options.c_str());
+ 
+   graph.GetXaxis()->SetTitle(_titleX.c_str());
+   graph.GetYaxis()->SetTitle(_titleY.c_str());
+   graph.SetTitle(_title.c_str());
+   if(_range)
+   {
+      graph.SetMinimum(_min);
+      graph.SetMaximum(_max);
+   }
+   else
+   {
+      graph.SetMinimum(0);
+      graph.SetMaximum(1.1);
+   }
+
+   rdpGraph.SetMarkerColor(_auto_colors[0]);
+   rdpGraph.SetLineColor(_auto_colors[0]);
+   rdpGraph.SetMarkerStyle(21);
+
+   CreateLegend();
+   _legends.back()->AddEntry(&rdpGraph, legend[0].c_str(), "LE1P");
+   _legends.back()->Draw();
+
+   mcpGraph.SetMarkerColor(_auto_colors[1]);
+   mcpGraph.SetLineColor(_auto_colors[1]);
+   mcpGraph.SetMarkerStyle(21);
+
+   _legends.back()->AddEntry(&mcpGraph, legend[1].c_str(), "LE1P");
+   _legends.back()->Draw();
+
+   gStyle->SetOptStat(0);
+
+   gPad->Modified();
 }

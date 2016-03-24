@@ -97,45 +97,143 @@ void DrawTrackAngleSelection(DrawingToolsTPCECal& draw, TCanvas* c1,
 }
 
 void DrawMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& mcp, std::string& momentum, int n, double* bins,
+   DataSample& rdp, DataSample& mcp, std::string& momentum, const int n, double* bins,
    const std::string& signal, const std::string& cut,
    const std::string& detector, const std::string& particle)
 {
+   c1->Clear();
    draw.SetLegendSize(0.15, 0.1);
    draw.SetLegendPos("br");
    draw.SetTitleY("Matching Efficiency");
    draw.SetTitleX("Track Momentum (MeV)");
    std::ostringstream ss;
+ 
+   std::vector<double> lerrs(n);
+   std::vector<double> herrs(n);
+   std::vector<double> effs = draw.GetEfficiency(rdp, momentum, signal, cut, n,
+      bins, &lerrs, &herrs); 
 
-   TH1F rdpHistogram("", "", n, bins);
-   draw.PlotEfficiency(rdp, momentum, signal, cut, n, bins, rdpHistogram, "",
-      (particle.find("bar") == std::string::npos) ? "#nu Data" : "#bar{#nu} Data");
-   TH1F mcpHistogram("", "", n, bins);
-   draw.PlotEfficiency(mcp, momentum, signal, cut, n, bins, mcpHistogram, "same",
-      (particle.find("bar") == std::string::npos) ? "#nu MC" : "#bar{#nu} MC");         
+   double x1[n];
+   double y1[n];
+   double xlerrs1[n];
+   double xherrs1[n];
+   double ylerrs1[n];
+   double yherrs1[n];
+   for(int i = 0; i < n; i++)
+   {
+      x1[i] = (bins[i] + bins[i + 1]) / 2.0;
+      y1[i] = effs[i];
+      xlerrs1[i] = x1[i] - bins[i];
+      xherrs1[i] = xlerrs1[i];
+      ylerrs1[i] = lerrs[i];
+      yherrs1[i] = herrs[i];
+   }
+   TGraphAsymmErrors rdpGraph(n, x1, y1, xlerrs1, xherrs1, ylerrs1, yherrs1);
+   
+   effs = draw.GetEfficiency(mcp, momentum, signal, cut, n, bins, &lerrs, &herrs); 
+
+   double x2[n];
+   double y2[n];
+   double xlerrs2[n];
+   double xherrs2[n];
+   double ylerrs2[n];
+   double yherrs2[n];
+   for(int i = 0; i < n; i++)
+   {
+      x2[i] = (bins[i] + bins[i + 1]) / 2.0;
+      y2[i] = effs[i];
+      xlerrs2[i] = x2[i] - bins[i];
+      xherrs2[i] = xlerrs2[i];
+      ylerrs2[i] = lerrs[i];
+      yherrs2[i] = herrs[i];
+   }
+   TGraphAsymmErrors mcpGraph(n, x2, y2, xlerrs2, xherrs2, ylerrs2, yherrs2);
+
+   vecstr legend;
+   legend.push_back((particle.find("bar") == std::string::npos) ? "#nu Data" : "#bar{#nu} Data");
+   legend.push_back((particle.find("bar") == std::string::npos) ? "#nu MC" : "#bar{#nu} MC");
+   TMultiGraph graph;
+   draw.Plot(graph, rdpGraph, mcpGraph, "AP", legend);
+   gPad->Update();
+
    ss << "eff_mom_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
+   c1->Clear();
 }
 
 void DrawTrackAngleEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& mcp, std::string& angle, int n, double* bins,
+   DataSample& rdp, DataSample& mcp, std::string& angle, const int n, double* bins,
    const std::string& signal, const std::string& cut,
    const std::string& detector, const std::string& particle)
 {
+   c1->Clear();
    draw.SetLegendSize(0.15, 0.1);
    draw.SetLegendPos("br");
    draw.SetTitleY("Matching Efficiency");
    draw.SetTitleX("cos(Track Angle)");
    std::ostringstream ss;
 
-   TH1F rdpHistogram("", "", n, bins);
-   draw.PlotEfficiency(rdp, angle, signal, cut, n, bins, rdpHistogram, "",
-      (particle.find("bar") == std::string::npos) ? "#nu Data" : "#bar{#nu} Data");
-   TH1F mcpHistogram("", "", n, bins);
-   draw.PlotEfficiency(mcp, angle, signal, cut, n, bins, mcpHistogram, "same",
-      (particle.find("bar") == std::string::npos) ? "#nu MC" : "#bar{#nu} MC");
+   std::vector<double> lerrs(n);
+   std::vector<double> herrs(n);
+   std::vector<double> effs = draw.GetEfficiency(rdp, angle, signal, cut, n,
+      bins, &lerrs, &herrs); 
+
+   double x[n];
+   double y[n];
+   double xlerrs[n];
+   double xherrs[n];
+   double ylerrs[n];
+   double yherrs[n];
+   for(int i = 0; i < n; i++)
+   {
+      x[i] = (bins[i] + bins[i + 1]) / 2.0;
+      y[i] = effs[i];
+      xlerrs[i] = x[i] - bins[i];
+      xherrs[i] = xlerrs[i];
+      ylerrs[i] = lerrs[i];
+      yherrs[i] = herrs[i];
+      if((y[i] + yherrs[i]) > 1)
+      {
+         yherrs[i] = 1 - y[i];
+      }
+      if((y[i] - ylerrs[i]) < 0)
+      {
+         ylerrs[i] = y[i];
+      }
+   }
+   TGraphAsymmErrors rdpGraph(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
+   
+   effs = draw.GetEfficiency(mcp, angle, signal, cut, n, bins, &lerrs, &herrs); 
+
+   for(int i = 0; i < n; i++)
+   {
+      x[i] = (bins[i] + bins[i + 1]) / 2.0;
+      y[i] = effs[i];
+      xlerrs[i] = x[i] - bins[i];
+      xherrs[i] = xlerrs[i];
+      ylerrs[i] = lerrs[i];
+      yherrs[i] = herrs[i];
+      if((y[i] + yherrs[i]) > 1)
+      {
+         yherrs[i] = 1 - y[i];
+      }
+      if((y[i] - ylerrs[i]) < 0)
+      {
+         ylerrs[i] = y[i];
+      }
+   }
+   TGraphAsymmErrors mcpGraph(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
+
+   vecstr legend;
+   legend.push_back((particle.find("bar") == std::string::npos) ? "#nu Data" : "#bar{#nu} Data");
+   legend.push_back((particle.find("bar") == std::string::npos) ? "#nu MC" : "#bar{#nu} MC");
+   TMultiGraph graph;
+   draw.Plot(graph, rdpGraph, mcpGraph, "AP", legend);
+   gPad->Update();
+
    ss << "eff_ang_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
+   c1->Clear();
 }
 
 void DrawMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
