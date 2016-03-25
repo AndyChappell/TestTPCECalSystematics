@@ -7,6 +7,8 @@
 double GetBinomialUncertainty(double numer, double denom);
 double GetSystematic(double rdpEfficiency, double mcpEfficiency,
    double rdpError, double mcpError);
+double GetSystematicUncertainty(double rdpEfficiency, double mcpEfficiency);
+double GetSystematicError(double rdpEffErr, double mcpEffErr);
 
 class DrawingToolsTPCECal: public DrawingTools
 {

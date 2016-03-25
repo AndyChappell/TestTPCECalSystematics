@@ -27,6 +27,16 @@ double GetSystematic(double rdpEfficiency, double mcpEfficiency,
       rdpError * rdpError + mcpError * mcpError);
 }
 
+double GetSystematicUncertainty(double rdpEfficiency, double mcpEfficiency)
+{
+   return sqrt((rdpEfficiency - mcpEfficiency) * (rdpEfficiency - mcpEfficiency));
+}
+
+double GetSystematicError(double rdpEffErr, double mcpEffErr)
+{
+   return sqrt(rdpEffErr * rdpEffErr + mcpEffErr * mcpEffErr);
+}
+
 DrawingToolsTPCECal::DrawingToolsTPCECal(const std::string& file,
    bool useT2Kstyle): DrawingTools(file, useT2Kstyle)
 {
@@ -250,7 +260,7 @@ void DrawingToolsTPCECal::PlotSystematic(DataSample& rdp, DataSample& mcp,
 
    for(int i = 0; i < numBins; i++)
    {
-      double systematic = GetSystematic(data_eff.at(i), mc_eff.at(i),
+/*      double systematic = GetSystematic(data_eff.at(i), mc_eff.at(i),
          data_errs.at(i), mc_errs.at(i));
 
       // Not -nan or inf
@@ -266,6 +276,22 @@ void DrawingToolsTPCECal::PlotSystematic(DataSample& rdp, DataSample& mcp,
             " inf or nan propagated!" << endl;
          histogram.SetBinContent(i + 1, 0);
          histogram.SetBinError(i + 1, 0.0000001);
+      }*/
+      double systematic = GetSystematicUncertainty(data_eff.at(i), mc_eff.at(i));
+      double error = GetSystematicError(data_errs.at(i), mc_errs.at(i));
+
+      // Not -nan or inf
+      if(!isnan(systematic) && !isinf(systematic))
+      {
+         histogram.SetBinContent(i + 1, systematic);
+         histogram.SetBinError(i + 1, error);
+      }
+      else
+      {
+         cout << "Error in bin " << bins[i] << " - " << bins[i + 1] <<
+            " inf or nan propagated!" << endl;
+         histogram.SetBinContent(i + 1, 0);
+         histogram.SetBinError(i + 1, error);
       }
    }
 
@@ -290,7 +316,7 @@ void DrawingToolsTPCECal::PlotSystematic(DataSample& nuRdp, DataSample& nubarRdp
 
    for(int i = 0; i < numBins; i++)
    {
-      double systematic = GetSystematic(data_eff.at(i), mc_eff.at(i),
+/*      double systematic = GetSystematic(data_eff.at(i), mc_eff.at(i),
          data_errs.at(i), mc_errs.at(i));
 
       // Not -nan or inf
@@ -306,6 +332,22 @@ void DrawingToolsTPCECal::PlotSystematic(DataSample& nuRdp, DataSample& nubarRdp
             " inf or nan propagated!" << endl;
          histogram.SetBinContent(i + 1, 0);
          histogram.SetBinError(i + 1, 0.0000001);
+      }*/
+      double systematic = GetSystematicUncertainty(data_eff.at(i), mc_eff.at(i));
+      double error = GetSystematicError(data_errs.at(i), mc_errs.at(i));
+
+      // Not -nan or inf
+      if(!isnan(systematic) && !isinf(systematic))
+      {
+         histogram.SetBinContent(i + 1, systematic);
+         histogram.SetBinError(i + 1, error);
+      }
+      else
+      {
+         cout << "Error in bin " << bins[i] << " - " << bins[i + 1] <<
+            " inf or nan propagated!" << endl;
+         histogram.SetBinContent(i + 1, 0);
+         histogram.SetBinError(i + 1, error);
       }
    }
 

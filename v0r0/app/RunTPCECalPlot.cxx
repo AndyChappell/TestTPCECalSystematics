@@ -46,9 +46,9 @@ void CreateBins(BinsVector& dsMomBins, BinsVector& brMomBins,
    double mubins1[13] = {0., 250., 500., 750., 1000., 1250., 1500., 1750., 2000.,
       2500., 3000., 3500., 4000.};
    Bins mulikeDSMom(mubins1, 12);
-   double mubins2[11] = {0., 100., 200., 300., 400., 500., 600., 700., 800., 1200.,
+   double mubins2[10] = {0., 200., 300., 400., 500., 600., 700., 800., 1200.,
       1600.};
-   Bins mulikeBrMom(mubins2, 10);
+   Bins mulikeBrMom(mubins2, 9);
    double mubins3[9] = {0.75, 0.8, 0.85, 0.875, 0.9, 0.925, 0.95, 0.975, 1.0};
    Bins mulikeDSAng(mubins3, 8);
    double mubins4[6] = {-0.3, 0.3, 0.5, 0.6, 0.7, 0.825};
@@ -128,57 +128,42 @@ DataSample GetDataSample(std::string filename)
    return data;
 }
 
-void DrawMomentumSelection(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& mcp, std::string& momentum, Bins& bins,
+void DrawSelection(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& variable, Bins& bins,
    const std::string& signal, const std::string& detector,
-   const std::string& particle)
+   const std::string& particle, const std::string& varstr,
+   const std::string& legpos)
 {
    draw.SetLegendSize(0.2, 0.4);
-   draw.SetLegendPos("tr");
+   draw.SetLegendPos(legpos);
    draw.SetTitleX("Track Momentum (MeV)");
    draw.SetTitleY("Counts/Bin");
    std::ostringstream ss;
 
    int n = bins.GetNumBins();
    double* boundaries = bins.GetBoundaries();
-   draw.Draw(rdp, mcp, momentum, n, boundaries, "particle", signal);
-   ss << "sel_mom_" << detector << "_" << particle << ".png";
+   draw.Draw(rdp, mcp, variable, n, boundaries, "particle", signal);
+   ss << "sel_" << varstr << "_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
 
-void DrawTrackAngleSelection(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& mcp, std::string& angle, Bins& bins,
-   const std::string& signal, const std::string& detector,
-   const std::string& particle)
-{
-   draw.SetLegendSize(0.2, 0.4);
-   draw.SetLegendPos("tl");
-   draw.SetTitleX("cos(Track Angle)");
-   draw.SetTitleY("Counts/Bin");
-   std::ostringstream ss;
-
-   draw.Draw(rdp, mcp, angle, bins.GetNumBins(), bins.GetBoundaries(),
-      "particle", signal);    
-   ss << "sel_ang_" << detector << "_" << particle << ".png";
-   c1->Print(ss.str().c_str(), "png");
-}
-
-void DrawMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& mcp, std::string& momentum, Bins& bins,
+void DrawEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& variable, Bins& bins,
    const std::string& signal, const std::string& cut,
-   const std::string& detector, const std::string& particle)
+   const std::string& detector, const std::string& particle,
+   const std::string& varstr, const std::string& legpos)
 {
    const int n = bins.GetNumBins();
    c1->Clear();
    draw.SetLegendSize(0.15, 0.1);
-   draw.SetLegendPos("br");
+   draw.SetLegendPos(legpos);
    draw.SetTitleY("Matching Efficiency");
    draw.SetTitleX("Track Momentum (MeV)");
    std::ostringstream ss;
  
    std::vector<double> lerrs(n);
    std::vector<double> herrs(n);
-   std::vector<double> effs = draw.GetEfficiency(rdp, momentum, signal, cut,
+   std::vector<double> effs = draw.GetEfficiency(rdp, variable, signal, cut,
       bins.GetNumBins(), bins.GetBoundaries(), &lerrs, &herrs); 
 
    double x1[n];
@@ -198,7 +183,7 @@ void DrawMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    }
    TGraphAsymmErrors rdpGraph(n, x1, y1, xlerrs1, xherrs1, ylerrs1, yherrs1);
    
-   effs = draw.GetEfficiency(mcp, momentum, signal, cut, bins.GetNumBins(),
+   effs = draw.GetEfficiency(mcp, variable, signal, cut, bins.GetNumBins(),
       bins.GetBoundaries(), &lerrs, &herrs); 
 
    double x2[n];
@@ -225,16 +210,17 @@ void DrawMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.Plot(graph, rdpGraph, mcpGraph, "AP", legend);
    gPad->Update();
 
-   ss << "eff_mom_" << detector << "_" << particle << ".png";
+   ss << "eff_" << varstr << "_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
    c1->Clear();
 }
 
-void DrawCombinedMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
+void DrawCombinedEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    DataSample& nuRdp, DataSample& nubarRdp, DataSample& nuMcp,
-   DataSample& nubarMcp, std::string& momentum, Bins& bins,
+   DataSample& nubarMcp, std::string& variable, Bins& bins,
    const std::string& signal, const std::string& cut,
-   const std::string& detector, const std::string& particle)
+   const std::string& detector, const std::string& particle,
+   const std::string& varstr, const std::string& legpos)
 {
    int n = bins.GetNumBins();
    c1->Clear();
@@ -246,7 +232,7 @@ void DrawCombinedMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
  
    std::vector<double> lerrs(n);
    std::vector<double> herrs(n);
-   std::vector<double> effs = draw.GetEfficiency(nuRdp, nubarRdp, momentum,
+   std::vector<double> effs = draw.GetEfficiency(nuRdp, nubarRdp, variable,
       signal, cut, bins.GetNumBins(), bins.GetBoundaries(), &lerrs, &herrs); 
 
    double x1[n];
@@ -266,7 +252,7 @@ void DrawCombinedMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    }
    TGraphAsymmErrors rdpGraph(n, x1, y1, xlerrs1, xherrs1, ylerrs1, yherrs1);
    
-   effs = draw.GetEfficiency(nuMcp, nubarMcp, momentum, signal, cut,
+   effs = draw.GetEfficiency(nuMcp, nubarMcp, variable, signal, cut,
       bins.GetNumBins(), bins.GetBoundaries(), &lerrs, &herrs); 
 
    double x2[n];
@@ -293,92 +279,16 @@ void DrawCombinedMomentumEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.Plot(graph, rdpGraph, mcpGraph, "AP", legend);
    gPad->Update();
 
-   ss << "eff_mom_" << detector << "_" << particle << ".png";
+   ss << "eff_" << varstr << "_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
    c1->Clear();
 }
 
-void DrawTrackAngleEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& mcp, std::string& angle, Bins bins,
+void DrawSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& mcp, std::string& variable, Bins& bins,
    const std::string& signal, const std::string& cut,
-   const std::string& detector, const std::string& particle)
-{
-   const int n = bins.GetNumBins();
-   c1->Clear();
-   draw.SetLegendSize(0.15, 0.1);
-   draw.SetLegendPos("br");
-   draw.SetTitleY("Matching Efficiency");
-   draw.SetTitleX("cos(Track Angle)");
-   std::ostringstream ss;
-
-   std::vector<double> lerrs(n);
-   std::vector<double> herrs(n);
-   std::vector<double> effs = draw.GetEfficiency(rdp, angle, signal, cut,
-      bins.GetNumBins(), bins.GetBoundaries(), &lerrs, &herrs); 
-
-   double x[n];
-   double y[n];
-   double xlerrs[n];
-   double xherrs[n];
-   double ylerrs[n];
-   double yherrs[n];
-   for(int i = 0; i < n; i++)
-   {
-      x[i] = (bins[i] + bins[i + 1]) / 2.0;
-      y[i] = effs[i];
-      xlerrs[i] = x[i] - bins[i];
-      xherrs[i] = xlerrs[i];
-      ylerrs[i] = lerrs[i];
-      yherrs[i] = herrs[i];
-      if((y[i] + yherrs[i]) > 1)
-      {
-         yherrs[i] = 1 - y[i];
-      }
-      if((y[i] - ylerrs[i]) < 0)
-      {
-         ylerrs[i] = y[i];
-      }
-   }
-   TGraphAsymmErrors rdpGraph(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
-   
-   effs = draw.GetEfficiency(mcp, angle, signal, cut, bins.GetNumBins(),
-      bins.GetBoundaries(), &lerrs, &herrs); 
-
-   for(int i = 0; i < n; i++)
-   {
-      x[i] = (bins[i] + bins[i + 1]) / 2.0;
-      y[i] = effs[i];
-      xlerrs[i] = x[i] - bins[i];
-      xherrs[i] = xlerrs[i];
-      ylerrs[i] = lerrs[i];
-      yherrs[i] = herrs[i];
-      if((y[i] + yherrs[i]) > 1)
-      {
-         yherrs[i] = 1 - y[i];
-      }
-      if((y[i] - ylerrs[i]) < 0)
-      {
-         ylerrs[i] = y[i];
-      }
-   }
-   TGraphAsymmErrors mcpGraph(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
-
-   vecstr legend;
-   legend.push_back((particle.find("bar") == std::string::npos) ? "#nu Data" : "#bar{#nu} Data");
-   legend.push_back((particle.find("bar") == std::string::npos) ? "#nu MC" : "#bar{#nu} MC");
-   TMultiGraph graph;
-   draw.Plot(graph, rdpGraph, mcpGraph, "AP", legend);
-   gPad->Update();
-
-   ss << "eff_ang_" << detector << "_" << particle << ".png";
-   c1->Print(ss.str().c_str(), "png");
-   c1->Clear();
-}
-
-void DrawMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& mcp, std::string& momentum, Bins& bins,
-   const std::string& signal, const std::string& cut,
-   const std::string& detector, const std::string& particle)
+   const std::string& detector, const std::string& particle,
+   const std::string& varstr)
 {
    draw.SetLegendSize(0.1, 0.05);
    draw.SetLegendPos("br");
@@ -387,18 +297,44 @@ void DrawMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    std::ostringstream ss;
 
    TH1F histogram("", "", bins.GetNumBins(), bins.GetBoundaries());
-   draw.PlotSystematic(rdp, mcp, momentum, signal, cut, bins.GetNumBins(),
+   draw.PlotSystematic(rdp, mcp, variable, signal, cut, bins.GetNumBins(),
       bins.GetBoundaries(), histogram, "e1",
       (particle.find("bar") == std::string::npos) ? "#nu" : "#bar{#nu}");
-   ss << "syst_mom_" << detector << "_" << particle << ".png";
+   ss << "syst_" << varstr << "_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
 
-void DrawCombinedMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& nuRdp, DataSample& nubarRdp, DataSample& nuMcp,
-   DataSample& nubarMcp, std::string& momentum, Bins& bins,
+void DrawDualSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& rdp, DataSample& ardp, DataSample& mcp, DataSample& amcp,
+   std::string& variable, Bins& bins,
    const std::string& signal, const std::string& cut,
-   const std::string& detector, const std::string& particle)
+   const std::string& detector, const std::string& particle,
+   const std::string& varstr)
+{
+   c1->Clear();
+   draw.SetLegendSize(0.1, 0.05);
+   draw.SetLegendPos("br");
+   draw.SetTitleX("Track Momentum (MeV)");
+   draw.SetTitleY("Systematic Uncertainty");
+   std::ostringstream ss;
+
+   TH1F histogram1("", "", bins.GetNumBins(), bins.GetBoundaries());
+   draw.PlotSystematic(rdp, mcp, variable, signal, cut, bins.GetNumBins(),
+      bins.GetBoundaries(), histogram1, "e1", "#nu");
+   TH1F histogram2("", "", bins.GetNumBins(), bins.GetBoundaries());
+   draw.PlotSystematic(ardp, amcp, variable, signal, cut, bins.GetNumBins(),
+      bins.GetBoundaries(), histogram2, "same", "#bar{#nu}");
+   ss << "syst_" << varstr << "_" << detector << "_" << particle << ".png";
+   c1->Print(ss.str().c_str(), "png");
+   c1->Clear();
+}
+
+void DrawCombinedSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
+   DataSample& nuRdp, DataSample& nubarRdp, DataSample& nuMcp,
+   DataSample& nubarMcp, std::string& variable, Bins& bins,
+   const std::string& signal, const std::string& cut,
+   const std::string& detector, const std::string& particle,
+   const std::string& varstr)
 {
    draw.SetLegendSize(0.1, 0.05);
    draw.SetLegendPos("br");
@@ -407,125 +343,9 @@ void DrawCombinedMomentumSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    std::ostringstream ss;
 
    TH1F histogram("", "", bins.GetNumBins(), bins.GetBoundaries());
-   draw.PlotSystematic(nuRdp, nubarRdp, nuMcp, nubarMcp, momentum, signal,
+   draw.PlotSystematic(nuRdp, nubarRdp, nuMcp, nubarMcp, variable, signal,
       cut, bins.GetNumBins(), bins.GetBoundaries(), histogram, "e1", "");
-   ss << "syst_mom_" << detector << "_" << particle << ".png";
-   c1->Print(ss.str().c_str(), "png");
-}
-
-void DrawCombinedTrackAngleEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& nuRdp, DataSample& nubarRdp, DataSample& nuMcp,
-   DataSample& nubarMcp, std::string& angle, Bins& bins,
-   const std::string& signal, const std::string& cut,
-   const std::string& detector, const std::string& particle)
-{
-   const int n = bins.GetNumBins();
-   c1->Clear();
-   draw.SetLegendSize(0.15, 0.1);
-   draw.SetLegendPos("br");
-   draw.SetTitleY("Matching Efficiency");
-   draw.SetTitleX("cos(Track Angle)");
-   std::ostringstream ss;
-
-   std::vector<double> lerrs(n);
-   std::vector<double> herrs(n);
-   std::vector<double> effs = draw.GetEfficiency(nuRdp, nubarRdp, angle, signal,
-      cut, bins.GetNumBins(), bins.GetBoundaries(), &lerrs, &herrs); 
-
-   double x[n];
-   double y[n];
-   double xlerrs[n];
-   double xherrs[n];
-   double ylerrs[n];
-   double yherrs[n];
-   for(int i = 0; i < n; i++)
-   {
-      x[i] = (bins[i] + bins[i + 1]) / 2.0;
-      y[i] = effs[i];
-      xlerrs[i] = x[i] - bins[i];
-      xherrs[i] = xlerrs[i];
-      ylerrs[i] = lerrs[i];
-      yherrs[i] = herrs[i];
-      if((y[i] + yherrs[i]) > 1)
-      {
-         yherrs[i] = 1 - y[i];
-      }
-      if((y[i] - ylerrs[i]) < 0)
-      {
-         ylerrs[i] = y[i];
-      }
-   }
-   TGraphAsymmErrors rdpGraph(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
-   
-   effs = draw.GetEfficiency(nuMcp, nubarMcp, angle, signal, cut,
-      bins.GetNumBins(), bins.GetBoundaries(), &lerrs, &herrs); 
-
-   for(int i = 0; i < n; i++)
-   {
-      x[i] = (bins[i] + bins[i + 1]) / 2.0;
-      y[i] = effs[i];
-      xlerrs[i] = x[i] - bins[i];
-      xherrs[i] = xlerrs[i];
-      ylerrs[i] = lerrs[i];
-      yherrs[i] = herrs[i];
-      if((y[i] + yherrs[i]) > 1)
-      {
-         yherrs[i] = 1 - y[i];
-      }
-      if((y[i] - ylerrs[i]) < 0)
-      {
-         ylerrs[i] = y[i];
-      }
-   }
-   TGraphAsymmErrors mcpGraph(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
-
-   vecstr legend;
-   legend.push_back("Data");
-   legend.push_back("MC");
-   TMultiGraph graph;
-   draw.Plot(graph, rdpGraph, mcpGraph, "AP", legend);
-   gPad->Update();
-
-   ss << "eff_ang_" << detector << "_" << particle << ".png";
-   c1->Print(ss.str().c_str(), "png");
-   c1->Clear();
-}
-
-void DrawTrackAngleSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& mcp, std::string& angle, Bins& bins,
-   const std::string& signal, const std::string& cut,
-   const std::string& detector, const std::string& particle)
-{
-   draw.SetLegendSize(0.1, 0.05);
-   draw.SetLegendPos("br");
-   draw.SetTitleX("cos(Track Angle)");
-   draw.SetTitleY("Systematic Uncertainty");
-   std::ostringstream ss;
-
-   TH1F histogram("", "", bins.GetNumBins(), bins.GetBoundaries());
-   draw.PlotSystematic(rdp, mcp, angle, signal, cut, bins.GetNumBins(),
-      bins.GetBoundaries(), histogram, "e1",
-      (particle.find("bar") == std::string::npos) ? "#nu" : "#bar{#nu}");
-   ss << "syst_ang_" << detector << "_" << particle << ".png";
-   c1->Print(ss.str().c_str(), "png");
-}
-
-void DrawCombinedTrackAngleSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& nuRdp, DataSample& nubarRdp, DataSample& nuMcp,
-   DataSample& nubarMcp, std::string& angle, Bins& bins,
-   const std::string& signal, const std::string& cut,
-   const std::string& detector, const std::string& particle)
-{
-   draw.SetLegendSize(0.1, 0.05);
-   draw.SetLegendPos("br");
-   draw.SetTitleX("cos(Track Angle)");
-   draw.SetTitleY("Systematic Uncertainty");
-   std::ostringstream ss;
-
-   TH1F histogram("", "", bins.GetNumBins(), bins.GetBoundaries());
-   draw.PlotSystematic(nuRdp, nubarRdp, nuMcp, nubarMcp, angle, signal, cut,
-      bins.GetNumBins(), bins.GetBoundaries(), histogram, "e1", "");
-   ss << "syst_ang_" << detector << "_" << particle << ".png";
+   ss << "syst_" << varstr << "_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
 
@@ -567,7 +387,8 @@ void PrintSummaryDataUnbinned(DrawingToolsTPCECal& draw, DataSample& rdp,
    std::cout << "rdp eff    = " << rdpEff << " +/- " << rdpErr << std::endl;
    std::cout << "mcp eff    = " << mcpEff << " +/- " << mcpErr << std::endl;
 
-   double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
+   //double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
+   double systematic = GetSystematicUncertainty(rdpEff, mcpEff);
    std::cout << "systematic = " << systematic << std::endl << std::endl;
 }
 
@@ -597,8 +418,9 @@ void PrintSummaryDataBinned(DrawingToolsTPCECal& draw, DataSample& rdp,
       std::cout << "mcp eff    = " << mcpEff[i] << " +/- " << mcpErr[i] <<
          std::endl;
 
-      double systematic = GetSystematic(rdpEff[i], mcpEff[i], rdpErr[i],
-         mcpErr[i]);
+      /*double systematic = GetSystematic(rdpEff[i], mcpEff[i], rdpErr[i],
+         mcpErr[i]);*/
+      double systematic = GetSystematicUncertainty(rdpEff[i], mcpEff[i]);
       std::cout << "systematic = " << systematic << std::endl << std::endl;
    }
 }
@@ -620,7 +442,8 @@ void PrintLaTeXSummaryDataUnbinned(DrawingToolsTPCECal& draw, DataSample& rdp,
    double mcpEff = draw.GetEfficiency(mcp, momentum, signal, cut, 1, bins,
       &errors).at(0);
    double mcpErr = errors.at(0);
-   double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
+   //double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
+   double systematic = GetSystematicUncertainty(rdpEff, mcpEff);
    std::cout << detector << " & " << particle << " & " << rdpEff << " & " <<
       rdpErr << " & " << mcpEff << " & " << mcpErr << " & " << systematic <<
       "\\\\" << std::endl;   
@@ -671,40 +494,40 @@ int main(int argc, char *argv[])
       draw.DumpPOT(mcp);
 
       // Momentum selections
-      DrawMomentumSelection(draw, c1, rdp, mcp, momentum, dsMomBins[i],
-         isDownstream, "ds", particle[i]);
-      DrawMomentumSelection(draw, c1, rdp, mcp, momentum, brMomBins[i],
-         isBarrel, "br", particle[i]);
+      DrawSelection(draw, c1, rdp, mcp, momentum, dsMomBins[i],
+         isDownstream, "ds", particle[i], "mom", "tr");
+      DrawSelection(draw, c1, rdp, mcp, momentum, brMomBins[i],
+         isBarrel, "br", particle[i], "mom", "tr");
 
       // Track angle selections
-      DrawTrackAngleSelection(draw, c1, rdp, mcp, angle, dsAngBins[i],
-         isDownstream, "ds", particle[i]);
-      DrawTrackAngleSelection(draw, c1, rdp, mcp, angle, brAngBins[i],
-         isBarrel, "br", particle[i]);
+      DrawSelection(draw, c1, rdp, mcp, angle, dsAngBins[i],
+         isDownstream, "ds", particle[i], "ang", "tl");
+      DrawSelection(draw, c1, rdp, mcp, angle, brAngBins[i],
+         isBarrel, "br", particle[i], "ang", "tl");
 
       // Momentum effiencies
-      DrawMomentumEfficiencies(draw, c1, rdp, mcp, momentum, dsMomBins[i],
-         isDownstream, recoDS, "ds", particle[i]);
-      DrawMomentumEfficiencies(draw, c1, rdp, mcp, momentum, brMomBins[i],
-         isBarrel, recoBr, "br", particle[i]);
+      DrawEfficiencies(draw, c1, rdp, mcp, momentum, dsMomBins[i],
+         isDownstream, recoDS, "ds", particle[i], "mom", "br");
+      DrawEfficiencies(draw, c1, rdp, mcp, momentum, brMomBins[i],
+         isBarrel, recoBr, "br", particle[i], "mom", "tl");
 
       // Track angle effiencies
-      DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, dsAngBins[i],
-         isDownstream, recoDS, "ds", particle[i]);
-      DrawTrackAngleEfficiencies(draw, c1, rdp, mcp, angle, brAngBins[i],
-         isBarrel, recoBr, "br", particle[i]);
+      DrawEfficiencies(draw, c1, rdp, mcp, angle, dsAngBins[i],
+         isDownstream, recoDS, "ds", particle[i], "ang", "br");
+      DrawEfficiencies(draw, c1, rdp, mcp, angle, brAngBins[i],
+         isBarrel, recoBr, "br", particle[i], "ang", "tl");
 
       // Momentum systematics
-      DrawMomentumSystematics(draw, c1, rdp, mcp, momentum, dsMomBins[i],
-         isDownstream, recoDS, "ds", particle[i]);
-      DrawMomentumSystematics(draw, c1, rdp, mcp, momentum, brMomBins[i],
-         isBarrel, recoBr, "br", particle[i]);
+      DrawSystematics(draw, c1, rdp, mcp, momentum, dsMomBins[i],
+         isDownstream, recoDS, "ds", particle[i], "mom");
+      DrawSystematics(draw, c1, rdp, mcp, momentum, brMomBins[i],
+         isBarrel, recoBr, "br", particle[i], "mom");
 
       // Track angle systematics
-      DrawTrackAngleSystematics(draw, c1, rdp, mcp, angle, dsAngBins[i],
-         isDownstream, recoDS, "ds", particle[i]);
-      DrawTrackAngleSystematics(draw, c1, rdp, mcp, angle, brAngBins[i],
-         isBarrel, recoBr, "br", particle[i]);
+      DrawSystematics(draw, c1, rdp, mcp, angle, dsAngBins[i],
+         isDownstream, recoDS, "ds", particle[i], "ang");
+      DrawSystematics(draw, c1, rdp, mcp, angle, brAngBins[i],
+         isBarrel, recoBr, "br", particle[i], "ang");
    }
 
    for(unsigned int i = 0; i < 2; ++i)
@@ -720,28 +543,48 @@ int main(int argc, char *argv[])
       draw.ApplyRange(false);
 
       // Momentum effiencies
-      DrawCombinedMomentumEfficiencies(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         momentum, dsMomBins[i], isDownstream, recoDS, "ds", particle[i] + "like");
-      DrawCombinedMomentumEfficiencies(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         momentum, brMomBins[i], isBarrel, recoBr, "br", particle[i] + "like");
+      DrawCombinedEfficiencies(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         momentum, dsMomBins[i], isDownstream, recoDS, "ds",
+         particle[i] + "like", "mom", "br");
+      DrawCombinedEfficiencies(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         momentum, brMomBins[i], isBarrel, recoBr, "br",
+         particle[i] + "like", "mom", "tl");
 
       // Track angle effiencies
-      DrawCombinedTrackAngleEfficiencies(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         angle, dsAngBins[i], isDownstream, recoDS, "ds", particle[i] + "like");
-      DrawCombinedTrackAngleEfficiencies(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         angle, brAngBins[i], isBarrel, recoBr, "br", particle[i] + "like");
+      DrawCombinedEfficiencies(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         angle, dsAngBins[i], isDownstream, recoDS, "ds", particle[i] + "like",
+         "ang", "br");
+      DrawCombinedEfficiencies(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         angle, brAngBins[i], isBarrel, recoBr, "br", particle[i] + "like",
+         "ang", "tl");
 
       // Momentum systematics
-      DrawCombinedMomentumSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         momentum, dsMomBins[i], isDownstream, recoDS, "ds", particle[i] + "like");
-      DrawCombinedMomentumSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         momentum, brMomBins[i], isBarrel, recoBr, "br", particle[i] + "like");
+      DrawCombinedSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         momentum, dsMomBins[i], isDownstream, recoDS, "ds",
+         particle[i] + "like", "mom");
+      DrawCombinedSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         momentum, brMomBins[i], isBarrel, recoBr, "br", particle[i] + "like",
+         "mom");
 
       // Track angle systematics
-      DrawCombinedTrackAngleSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         angle, dsAngBins[i], isDownstream, recoDS, "ds", particle[i] + "like");
-      DrawCombinedTrackAngleSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         angle, brAngBins[i], isBarrel, recoBr, "br", particle[i] + "like");
+      DrawCombinedSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         angle, dsAngBins[i], isDownstream, recoDS, "ds", particle[i] + "like",
+         "ang");
+      DrawCombinedSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         angle, brAngBins[i], isBarrel, recoBr, "br", particle[i] + "like",
+         "ang");
+
+/*      // Momentum systematics - dual plot
+      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         momentum, dsMomBins[i], isDownstream, recoDS, "ds", particle[i], "mom");
+      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         momentum, brMomBins[i], isBarrel, recoBr, "br", particle[i], "mom");
+
+      // Track angle systematics - dual plot
+      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         angle, dsAngBins[i], isDownstream, recoDS, "ds", particle[i], "ang");
+      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+         angle, brAngBins[i], isBarrel, recoBr, "br", particle[i], "ang");*/
    }
 
    // Print unbinned summary
@@ -791,7 +634,7 @@ int main(int argc, char *argv[])
    }
 
    // Draw purities
-   vecstr trueParticle;
+/*   vecstr trueParticle;
    trueParticle.push_back("11");
    trueParticle.push_back("13");
    trueParticle.push_back("2212");
@@ -807,7 +650,7 @@ int main(int argc, char *argv[])
          trueParticle[i], i);
       DrawPurity(draw, c1, mcp, "br", particle[i], 
          trueParticle[i], i);
-   }
+   }*/
 
    delete c1;
 }
