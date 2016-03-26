@@ -132,11 +132,11 @@ void DrawSelection(DrawingToolsTPCECal& draw, TCanvas* c1,
    DataSample& rdp, DataSample& mcp, std::string& variable, Bins& bins,
    const std::string& signal, const std::string& detector,
    const std::string& particle, const std::string& varstr,
-   const std::string& legpos)
+   const std::string& axis, const std::string& legpos)
 {
    draw.SetLegendSize(0.2, 0.4);
    draw.SetLegendPos(legpos);
-   draw.SetTitleX("Track Momentum (MeV)");
+   draw.SetTitleX(axis);
    draw.SetTitleY("Counts/Bin");
    std::ostringstream ss;
 
@@ -151,14 +151,14 @@ void DrawEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    DataSample& rdp, DataSample& mcp, std::string& variable, Bins& bins,
    const std::string& signal, const std::string& cut,
    const std::string& detector, const std::string& particle,
-   const std::string& varstr, const std::string& legpos)
+   const std::string& varstr, const std::string& axis, const std::string& legpos)
 {
    const int n = bins.GetNumBins();
    c1->Clear();
    draw.SetLegendSize(0.15, 0.1);
    draw.SetLegendPos(legpos);
    draw.SetTitleY("Matching Efficiency");
-   draw.SetTitleX("Track Momentum (MeV)");
+   draw.SetTitleX(axis);
    std::ostringstream ss;
  
    std::vector<double> lerrs(n);
@@ -288,17 +288,17 @@ void DrawSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    DataSample& rdp, DataSample& mcp, std::string& variable, Bins& bins,
    const std::string& signal, const std::string& cut,
    const std::string& detector, const std::string& particle,
-   const std::string& varstr)
+   const std::string& varstr, const std::string& axis)
 {
    draw.SetLegendSize(0.1, 0.05);
    draw.SetLegendPos("br");
-   draw.SetTitleX("Track Momentum (MeV)");
+   draw.SetTitleX(axis);
    draw.SetTitleY("Systematic Uncertainty");
    std::ostringstream ss;
 
    TH1F histogram("", "", bins.GetNumBins(), bins.GetBoundaries());
    draw.PlotSystematic(rdp, mcp, variable, signal, cut, bins.GetNumBins(),
-      bins.GetBoundaries(), histogram, "e1",
+      bins.GetBoundaries(), histogram, "e1", 
       (particle.find("bar") == std::string::npos) ? "#nu" : "#bar{#nu}");
    ss << "syst_" << varstr << "_" << detector << "_" << particle << ".png";
    c1->Print(ss.str().c_str(), "png");
@@ -389,7 +389,8 @@ void PrintSummaryDataUnbinned(DrawingToolsTPCECal& draw, DataSample& rdp,
 
    //double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
    double systematic = GetSystematicUncertainty(rdpEff, mcpEff);
-   std::cout << "systematic = " << systematic << std::endl << std::endl;
+   double error = GetSystematicError(rdpErr, mcpErr);
+   std::cout << "systematic = " << systematic<< " +/- " << error << std::endl << std::endl;
 }
 
 void PrintSummaryDataBinned(DrawingToolsTPCECal& draw, DataSample& rdp,
@@ -407,7 +408,7 @@ void PrintSummaryDataBinned(DrawingToolsTPCECal& draw, DataSample& rdp,
    std::vector<double> rdpEff = draw.GetEfficiency(rdp, variable, signal, cut,
       n, bins.GetBoundaries(), &rdpErr);
    std::vector<double> mcpEff = draw.GetEfficiency(mcp, variable, signal, cut,
-      n, bins.GetBoundaries(), &rdpErr);
+      n, bins.GetBoundaries(), &mcpErr);
 
    std::cout << particle << " : " << detector << std::endl;
    for(int i = 0; i < n; i++)
@@ -444,9 +445,37 @@ void PrintLaTeXSummaryDataUnbinned(DrawingToolsTPCECal& draw, DataSample& rdp,
    double mcpErr = errors.at(0);
    //double systematic = GetSystematic(rdpEff, mcpEff, rdpErr, mcpErr);
    double systematic = GetSystematicUncertainty(rdpEff, mcpEff);
+   double error = GetSystematicError(rdpErr, mcpErr);
    std::cout << detector << " & " << particle << " & " << rdpEff << " & " <<
-      rdpErr << " & " << mcpEff << " & " << mcpErr << " & " << systematic <<
-      "\\\\" << std::endl;   
+      rdpErr << " & " << mcpEff << " & " << mcpErr << " & " <<
+      (systematic * 100) << " & " << (error * 100) << "\\\\" << std::endl;   
+}
+
+void PrintLaTeXSummaryDataBinned(DrawingToolsTPCECal& draw, DataSample& rdp,
+   DataSample& mcp, const std::string& variable, Bins& bins,
+   const std::string& signal, const std::string& cut,
+   const std::string& detector, const std::string& particle)
+{
+   const int n = bins.GetNumBins();
+   std::vector<double> mcpErr(n);
+   std::vector<double> rdpErr(n);
+   
+   std::cout.setf(ios::fixed, ios::floatfield);
+   std::cout.precision(3);
+
+   std::vector<double> rdpEff = draw.GetEfficiency(rdp, variable, signal, cut,
+      n, bins.GetBoundaries(), &rdpErr);
+   std::vector<double> mcpEff = draw.GetEfficiency(mcp, variable, signal, cut,
+      n, bins.GetBoundaries(), &mcpErr);
+
+   std::cout << particle << " : " << detector << std::endl;
+   for(int i = 0; i < n; i++)
+   {
+      double systematic = GetSystematicUncertainty(rdpEff[i], mcpEff[i]);
+      std::cout << bins[i] << " - " << bins[i + 1] << " & " << rdpEff[i] <<
+         " & " << rdpErr[i] << " & " << mcpEff[i] << " & " << mcpErr[i] <<
+         " & " << (systematic * 100) << "\\\\" << std::endl;
+   }
 }
 
 int main(int argc, char *argv[])
@@ -495,39 +524,39 @@ int main(int argc, char *argv[])
 
       // Momentum selections
       DrawSelection(draw, c1, rdp, mcp, momentum, dsMomBins[i],
-         isDownstream, "ds", particle[i], "mom", "tr");
+         isDownstream, "ds", particle[i], "mom", "Track Momentum (MeV)", "tr");
       DrawSelection(draw, c1, rdp, mcp, momentum, brMomBins[i],
-         isBarrel, "br", particle[i], "mom", "tr");
+         isBarrel, "br", particle[i], "mom", "Track Momentum (MeV)", "tr");
 
       // Track angle selections
       DrawSelection(draw, c1, rdp, mcp, angle, dsAngBins[i],
-         isDownstream, "ds", particle[i], "ang", "tl");
+         isDownstream, "ds", particle[i], "ang", "cos(Track Angle)", "tl");
       DrawSelection(draw, c1, rdp, mcp, angle, brAngBins[i],
-         isBarrel, "br", particle[i], "ang", "tl");
+         isBarrel, "br", particle[i], "ang", "cos(Track Angle)", "tl");
 
       // Momentum effiencies
       DrawEfficiencies(draw, c1, rdp, mcp, momentum, dsMomBins[i],
-         isDownstream, recoDS, "ds", particle[i], "mom", "br");
+         isDownstream, recoDS, "ds", particle[i], "mom", "Track Momentum (MeV)", "br");
       DrawEfficiencies(draw, c1, rdp, mcp, momentum, brMomBins[i],
-         isBarrel, recoBr, "br", particle[i], "mom", "tl");
+         isBarrel, recoBr, "br", particle[i], "mom", "Track Momentum (MeV)", "tl");
 
       // Track angle effiencies
       DrawEfficiencies(draw, c1, rdp, mcp, angle, dsAngBins[i],
-         isDownstream, recoDS, "ds", particle[i], "ang", "br");
+         isDownstream, recoDS, "ds", particle[i], "ang", "cos(Track Angle)", "br");
       DrawEfficiencies(draw, c1, rdp, mcp, angle, brAngBins[i],
-         isBarrel, recoBr, "br", particle[i], "ang", "tl");
+         isBarrel, recoBr, "br", particle[i], "ang", "cos(Track Angle)", "tl");
 
       // Momentum systematics
       DrawSystematics(draw, c1, rdp, mcp, momentum, dsMomBins[i],
-         isDownstream, recoDS, "ds", particle[i], "mom");
+         isDownstream, recoDS, "ds", particle[i], "mom", "Track Momentum (MeV)");
       DrawSystematics(draw, c1, rdp, mcp, momentum, brMomBins[i],
-         isBarrel, recoBr, "br", particle[i], "mom");
+         isBarrel, recoBr, "br", particle[i], "mom", "Track Momentum (MeV)");
 
       // Track angle systematics
       DrawSystematics(draw, c1, rdp, mcp, angle, dsAngBins[i],
-         isDownstream, recoDS, "ds", particle[i], "ang");
+         isDownstream, recoDS, "ds", particle[i], "ang", "cos(Track Angle)");
       DrawSystematics(draw, c1, rdp, mcp, angle, brAngBins[i],
-         isBarrel, recoBr, "br", particle[i], "ang");
+         isBarrel, recoBr, "br", particle[i], "ang", "cos(Track Angle)");
    }
 
    for(unsigned int i = 0; i < 2; ++i)
@@ -574,17 +603,17 @@ int main(int argc, char *argv[])
          angle, brAngBins[i], isBarrel, recoBr, "br", particle[i] + "like",
          "ang");
 
-/*      // Momentum systematics - dual plot
-      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         momentum, dsMomBins[i], isDownstream, recoDS, "ds", particle[i], "mom");
-      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         momentum, brMomBins[i], isBarrel, recoBr, "br", particle[i], "mom");
+      // Momentum systematics - dual plot
+//      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+//         momentum, dsMomBins[i], isDownstream, recoDS, "ds", particle[i], "mom");
+//      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+//         momentum, brMomBins[i], isBarrel, recoBr, "br", particle[i], "mom");
 
       // Track angle systematics - dual plot
-      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         angle, dsAngBins[i], isDownstream, recoDS, "ds", particle[i], "ang");
-      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         angle, brAngBins[i], isBarrel, recoBr, "br", particle[i], "ang");*/
+//      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+//         angle, dsAngBins[i], isDownstream, recoDS, "ds", particle[i], "ang");
+//      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
+//         angle, brAngBins[i], isBarrel, recoBr, "br", particle[i], "ang");
    }
 
    // Print unbinned summary
@@ -609,12 +638,17 @@ int main(int argc, char *argv[])
 
       DrawingToolsTPCECal draw(mcpFiles[i]);
 
+      std::cout << "***** " << particle[i] << " *****" << std::endl;
+      std::cout << "*** Downstream Mom ***" << std::endl;
       PrintSummaryDataBinned(draw, rdp, mcp, momentum, dsMomBins[i],
          isDownstream, recoDS, "Downstream", particle[i]);
+      std::cout << "*** Barrel Mom ***" << std::endl;
       PrintSummaryDataBinned(draw, rdp, mcp, momentum, brMomBins[i],
          isBarrel, recoBr, "Barrel", particle[i]);
+      std::cout << "*** Downstream Ang ***" << std::endl;
       PrintSummaryDataBinned(draw, rdp, mcp, angle, dsAngBins[i],
          isDownstream, recoDS, "Downstream", particle[i]);
+      std::cout << "*** Barrel Ang ***" << std::endl;
       PrintSummaryDataBinned(draw, rdp, mcp, angle, brAngBins[i],
          isBarrel, recoBr, "Barrel", particle[i]);
    }
@@ -627,10 +661,27 @@ int main(int argc, char *argv[])
 
       DrawingToolsTPCECal draw(mcpFiles[i]);
 
+      std::cout << "***** " << particle[i] << " *****" << std::endl;
+      std::cout << "*** Downstream ***" << std::endl;
       PrintLaTeXSummaryDataUnbinned(draw, rdp, mcp, momentum, isDownstream, recoDS,
          "Downstream", particle[i]);
+      std::cout << "*** Barrel ***" << std::endl;
       PrintLaTeXSummaryDataUnbinned(draw, rdp, mcp, momentum, isBarrel, recoBr,
          "Barrel", particle[i]);
+
+      std::cout << "***** " << particle[i] << " *****" << std::endl;
+      std::cout << "*** Downstream Mom ***" << std::endl;
+      PrintLaTeXSummaryDataBinned(draw, rdp, mcp, momentum, dsMomBins[i],
+         isDownstream, recoDS, "Downstream", particle[i]);
+      std::cout << "*** Barrel Mom ***" << std::endl;
+      PrintLaTeXSummaryDataBinned(draw, rdp, mcp, momentum, brMomBins[i],
+         isBarrel, recoBr, "Barrel", particle[i]);
+      std::cout << "*** Downstream Ang ***" << std::endl;
+      PrintLaTeXSummaryDataBinned(draw, rdp, mcp, angle, dsAngBins[i],
+         isDownstream, recoDS, "Downstream", particle[i]);
+      std::cout << "*** Barrel Ang ***" << std::endl;
+      PrintLaTeXSummaryDataBinned(draw, rdp, mcp, angle, brAngBins[i],
+         isBarrel, recoBr, "Barrel", particle[i]);
    }
 
    // Draw purities
