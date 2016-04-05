@@ -361,19 +361,19 @@ void DrawCombinedSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
 }
 
 void DrawPurity(DrawingToolsTPCECal& draw, TCanvas* c1, DataSample& mcp,
-   const std::string& detector, const std::string& particle,
-   const std::string& trueParticle, const int selection)
+   const Detector& detector, const Particle& particle, const int selection)
 {
-   draw.SetLegendSize(0.15, 0.1);
-   draw.SetLegendPos("tl");
+   draw.SetLegendSize(0.12, 0.1);
+   draw.SetLegendPos("tr");
    draw.SetTitleX("Cut");
    draw.SetTitleY("Purity/Efficiency");
    std::ostringstream ss;
 
-   ss << "particle==" << trueParticle;
-   draw.DrawEffPurVSCut(mcp, selection, (detector == "ds") ? 0 : 1, ss.str(), "");
+   ss << "particle==" << particle.GetPDG();
+   draw.DrawEffPurVSCut(mcp, selection, (detector.GetName() == "ds") ? 0 : 1,
+      ss.str(), "");
    ss.str(""); ss.clear();
-   ss << "pur_" << detector << "_" << particle << ".png";
+   ss << "pur_" << detector.GetName() << "_" << particle.GetName() << ".png";
    c1->Print(ss.str().c_str(), "png");
 }
 
@@ -690,8 +690,8 @@ int main(int argc, char *argv[])
 
       DrawingToolsTPCECal draw(mcpFiles[i]);
 
-      DrawPurity(draw, c1, mcp, "ds", *(particle[i]), i);
-      DrawPurity(draw, c1, mcp, "br", *(particle[i]), i);
+      DrawPurity(draw, c1, mcp, downstream, *(particle[i]), i);
+      DrawPurity(draw, c1, mcp, barrel, *(particle[i]), i);
    }
 
    delete c1;
