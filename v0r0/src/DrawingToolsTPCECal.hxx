@@ -3,6 +3,7 @@
 
 #include "DrawingTools.hxx"
 #include "TMultiGraph.h"
+#include "TGraphAsymmErrors.h"
 
 double GetBinomialUncertainty(double numer, double denom);
 double GetSystematic(double rdpEfficiency, double mcpEfficiency,
@@ -15,28 +16,29 @@ class DrawingToolsTPCECal: public DrawingTools
 public:
    DrawingToolsTPCECal(const std::string& file = "", bool useT2Kstyle = true);
    DrawingToolsTPCECal(Experiment& exp, bool useT2Kstyle = true);
-   virtual ~DrawingToolsTPCECal(){}
+   virtual ~DrawingToolsTPCECal();
+
+   TGraphAsymmErrors* CreateEfficiencyGraph(DataSample& data,
+      const std::string& variable, const std::string& signal,
+      const std::string& cut, int n, double* bins);
 
    /**
       Draws a 1D efficiency plot by bin. Statistical uncertainties are
       calculated using binomial statistics if errors variable is not used,
       otherwise errors are added in quadrature.
       
-      \param data The data sample for which efficiencies are to be calculated.
+      \param rdp  The real data sample for which efficiencies are to be calculated.
+      \param mcp  The MC data sample for which efficiencies are to be calculated.
       \param variable   The binning variable.
       \param signal  The signal.
       \param cut  The cut.
       \param numBins The number of bins.
       \param bins   The bin boundaries.
-      \param histogram  The histogram to be filled.
-      \param options Root plotting options.
-      \param legend  The legend.
-      \param errors  Any errors to be applied.
+      \param isAnti  Indicates whether the data is from anti-neutrino-mode running.
    */
-   void PlotEfficiency(DataSample& data, const std::string& variable,
-      const std::string& signal, const std::string& cut, const int numBins,
-      double* bins, TH1F& histogram, const std::string& options = "",
-      const std::string& legend = "", std::vector<double>* errors = 0);
+   void PlotEfficiency(DataSample& rdp, DataSample& mcp,
+      const std::string& variable, const std::string& signal,
+      const std::string& cut, const int numBins, double* bins, bool isAnti);
 
    /**
       Gets the 1D matching efficiency of a data sample. Statistical
@@ -154,6 +156,9 @@ protected:
    bool _range;
    double _min;
    double _max;
+   TMultiGraph* _multigraph;
+   TH1F* _histogram1;
+   TH1F* _histogram2;
 };
 
 #endif

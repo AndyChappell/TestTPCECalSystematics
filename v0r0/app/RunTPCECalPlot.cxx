@@ -157,7 +157,6 @@ void DrawEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    DataSample& rdp, DataSample& mcp, const AnalysisVariable& variable, Bins& bins,
    const Detector& detector, const Particle& particle)
 {
-   const int n = bins.GetNumBins();
    c1->Clear();
    draw.SetLegendSize(0.12, 0.1);
    draw.SetLegendPos("tr");
@@ -165,58 +164,9 @@ void DrawEfficiencies(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.SetTitleX(variable.GetDescription());
    std::ostringstream ss;
  
-   std::vector<double> lerrs(n);
-   std::vector<double> herrs(n);
-   std::vector<double> effs = draw.GetEfficiency(rdp,
-      variable.GetMicrotreeVariable(), detector.GetSignal(), detector.GetCut(),
-      bins.GetNumBins(), bins.GetBoundaries(), &lerrs, &herrs); 
-
-   double x1[n];
-   double y1[n];
-   double xlerrs1[n];
-   double xherrs1[n];
-   double ylerrs1[n];
-   double yherrs1[n];
-   for(int i = 0; i < n; i++)
-   {
-      x1[i] = (bins[i] + bins[i + 1]) / 2.0;
-      y1[i] = effs[i];
-      xlerrs1[i] = x1[i] - bins[i];
-      xherrs1[i] = xlerrs1[i];
-      ylerrs1[i] = lerrs[i];
-      yherrs1[i] = herrs[i];
-   }
-   TGraphAsymmErrors rdpGraph(n, x1, y1, xlerrs1, xherrs1, ylerrs1, yherrs1);
-   
-   effs = draw.GetEfficiency(mcp, variable.GetMicrotreeVariable(),
+   draw.PlotEfficiency(rdp, mcp, variable.GetMicrotreeVariable(),
       detector.GetSignal(), detector.GetCut(), bins.GetNumBins(),
-      bins.GetBoundaries(), &lerrs, &herrs); 
-
-   double x2[n];
-   double y2[n];
-   double xlerrs2[n];
-   double xherrs2[n];
-   double ylerrs2[n];
-   double yherrs2[n];
-   for(int i = 0; i < n; i++)
-   {
-      x2[i] = (bins[i] + bins[i + 1]) / 2.0;
-      y2[i] = effs[i];
-      xlerrs2[i] = x2[i] - bins[i];
-      xherrs2[i] = xlerrs2[i];
-      ylerrs2[i] = lerrs[i];
-      yherrs2[i] = herrs[i];
-   }
-   TGraphAsymmErrors mcpGraph(n, x2, y2, xlerrs2, xherrs2, ylerrs2, yherrs2);
-
-   vecstr legend;
-   legend.push_back((particle.GetName().find("bar") == std::string::npos) ?
-      "#nu Data" : "#bar{#nu} Data");
-   legend.push_back((particle.GetName().find("bar") == std::string::npos) ?
-      "#nu MC" : "#bar{#nu} MC");
-   TMultiGraph graph;
-   draw.Plot(graph, rdpGraph, mcpGraph, "AP", legend);
-   gPad->Update();
+      bins.GetBoundaries(), particle.GetName().find("bar") != std::string::npos);
 
    ss << "eff_" << variable.GetName() << "_" << detector.GetName() << "_" <<
       particle.GetName() << ".png";

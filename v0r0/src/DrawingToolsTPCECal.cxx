@@ -42,6 +42,9 @@ DrawingToolsTPCECal::DrawingToolsTPCECal(const std::string& file,
 {
    _treeForSystErrors = NULL;
    _range = false;
+   _multigraph = nullptr;
+   _histogram1 = nullptr;
+   _histogram2 = nullptr;
 }
 
 DrawingToolsTPCECal::DrawingToolsTPCECal(Experiment& exp, bool useT2Kstyle):
@@ -49,41 +52,75 @@ DrawingToolsTPCECal::DrawingToolsTPCECal(Experiment& exp, bool useT2Kstyle):
 {
    _treeForSystErrors = NULL;
    _range = false;
+   _multigraph = nullptr;
+   _histogram1 = nullptr;
+   _histogram2 = nullptr;
 }
 
-void DrawingToolsTPCECal::PlotEfficiency(DataSample& data,
-   const std::string& variable, const std::string& signal,
-   const std::string& cut, const int numBins, double* bins, TH1F& histogram,
-   const std::string& options, const std::string& legend,
-   std::vector<double>* errors)
+DrawingToolsTPCECal::~DrawingToolsTPCECal()
 {
-   std::vector<double> fillvar(numBins);
-   std::vector<double> staterrors(numBins);
-
-   fillvar = GetEfficiency(data, variable, signal, cut, numBins, bins,
-      &staterrors);
-
-   for(int i = 1; i < numBins + 1; i++)
+   if(_multigraph)
    {
-      histogram.SetBinContent(i, fillvar.at(i - 1));
-      // Add systematic errors to statistical errors.
-      if(!isinf(staterrors.at(i - 1)))
-      {
-         histogram.SetBinError(i, staterrors.at(i - 1));
-      }
-      else
-      {
-         histogram.SetBinError(i, 0);
-      }
-      if(errors)
-      {
-         histogram.SetBinError(i, histogram.GetBinError(i) + errors->at(i - 1));
-      }
+      delete _multigraph;
+   }
+   if(_histogram1)
+   {
+      delete _histogram1;
+   }
+   if(_histogram2)
+   {
+      delete _histogram2;
+   }
+}
+
+TGraphAsymmErrors* DrawingToolsTPCECal::CreateEfficiencyGraph(DataSample& data,
+   const std::string& variable, const std::string& signal,
+   const std::string& cut, int n, double* bins)
+{
+   std::vector<double> lerrs(n);
+   std::vector<double> herrs(n);
+   std::vector<double> effs = GetEfficiency(data, variable, signal, cut, n,
+      bins, &lerrs, &herrs); 
+
+   double x[n];
+   double y[n];
+   double xlerrs[n];
+   double xherrs[n];
+   double ylerrs[n];
+   double yherrs[n];
+   for(int i = 0; i < n; i++)
+   {
+      x[i] = (bins[i] + bins[i + 1]) / 2.0;
+      y[i] = effs[i];
+      xlerrs[i] = x[i] - bins[i];
+      xherrs[i] = xlerrs[i];
+      ylerrs[i] = lerrs[i];
+      yherrs[i] = herrs[i];
+   }
+   
+   return new TGraphAsymmErrors(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
+}
+
+void DrawingToolsTPCECal::PlotEfficiency(DataSample& rdp, DataSample& mcp,
+   const std::string& variable, const std::string& signal,
+   const std::string& cut, const int numBins, double* bins, bool isAnti)
+{
+   if(_multigraph)
+   {
+      delete _multigraph;
+      _multigraph = nullptr;
    }
 
-   histogram.SetAxisRange(0,1.1,"Y");
+   TGraphAsymmErrors* graph1 = CreateEfficiencyGraph(rdp, variable, signal, cut,
+      numBins, bins);
+   TGraphAsymmErrors* graph2 = CreateEfficiencyGraph(mcp, variable, signal, cut,
+      numBins, bins);
 
-   Plot(histogram, options, legend);
+   std::vector<std::string> legend;
+   legend.push_back(isAnti ? "#bar{#nu} Data" : "#nu Data");
+   legend.push_back(isAnti ? "#bar{#nu} MC" : "#nu MC");
+   _multigraph = new TMultiGraph();
+   Plot(*_multigraph, *graph1, *graph2, "AP", legend);
    gPad->Update();
 }
 
