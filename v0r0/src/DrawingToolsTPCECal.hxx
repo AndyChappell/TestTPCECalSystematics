@@ -18,14 +18,8 @@ public:
    DrawingToolsTPCECal(Experiment& exp, bool useT2Kstyle = true);
    virtual ~DrawingToolsTPCECal();
 
-   TGraphAsymmErrors* CreateEfficiencyGraph(DataSample& data,
-      const std::string& variable, const std::string& signal,
-      const std::string& cut, int n, double* bins);
-
    /**
-      Draws a 1D efficiency plot by bin. Statistical uncertainties are
-      calculated using binomial statistics if errors variable is not used,
-      otherwise errors are added in quadrature.
+      Draws a 1D efficiency plot by bin.
       
       \param rdp  The real data sample for which efficiencies are to be calculated.
       \param mcp  The MC data sample for which efficiencies are to be calculated.
@@ -40,6 +34,32 @@ public:
       const std::string& variable, const std::string& signal,
       const std::string& cut, const int numBins, double* bins, bool isAnti);
 
+   /**
+      Draws a 1D efficiency plot combining nu mode and nubar mode samples, by
+      bin.
+      
+      \param rdp
+         The nu mode real data sample for which efficiencies are to be
+         calculated.
+      \param rdpbar
+         The nubar mode real data sample for which efficiencies are to be
+         calculated.
+      \param mcp
+         The nu mode MC data sample for which efficiencies are to be calculated.
+      \param mcpbar
+         The nubar mode MC data sample for which efficiencies are to be
+         calculated.
+      \param variable   The binning variable.
+      \param signal  The signal.
+      \param cut  The cut.
+      \param numBins The number of bins.
+      \param bins   The bin boundaries.
+   */
+   void PlotEfficiency(DataSample& rdp, DataSample& rdpbar, 
+      DataSample& mcp, DataSample& mcpbar, const std::string& variable,
+      const std::string& signal, const std::string& cut, const int numBins,
+      double* bins);
+   
    /**
       Gets the 1D matching efficiency of a data sample. Statistical
       uncertainties are calculated using binomial statistics if the lowErrs and
@@ -152,6 +172,43 @@ public:
    void ApplyRange(bool range){ _range = range; }
 
 protected:
+   /**
+      Creates a graph with asymmetric errors from the data sample provided.
+      
+      \param data The data sample for which the graph is to be created.
+      \param variable   The binning variable.
+      \param signal  The signal.
+      \param cut  The cut.
+      \param n The number of bins.
+      \param bins   The bin boundaries.
+   */
+   TGraphAsymmErrors* CreateEfficiencyGraph(DataSample& data,
+      const std::string& variable, const std::string& signal,
+      const std::string& cut, int n, double* bins);
+
+   /**
+      Creates a graph with asymmetric errors from the combined nu mode and nubar
+      mode data samples provided.
+      
+      \param data
+         The nu mode data sample for which the graph is to be created.
+      \param antidata
+         The nubar mode data sample for which the graph is to be created.
+      \param variable
+         The binning variable.
+      \param signal
+         The signal.
+      \param cut
+         The cut.
+      \param n
+         The number of bins.
+      \param bins
+         The bin boundaries.
+   */
+   TGraphAsymmErrors* CreateEfficiencyGraph(DataSample& data,
+      DataSample& antidata, const std::string& variable,
+      const std::string& signal, const std::string& cut, int n, double* bins);
+
    std::string _titleZ;
    bool _range;
    double _min;

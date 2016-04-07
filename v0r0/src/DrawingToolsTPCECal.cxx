@@ -101,6 +101,34 @@ TGraphAsymmErrors* DrawingToolsTPCECal::CreateEfficiencyGraph(DataSample& data,
    return new TGraphAsymmErrors(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
 }
 
+TGraphAsymmErrors* DrawingToolsTPCECal::CreateEfficiencyGraph(DataSample& data,
+   DataSample& antidata, const std::string& variable, const std::string& signal,
+   const std::string& cut, int n, double* bins)
+{
+   std::vector<double> lerrs(n);
+   std::vector<double> herrs(n);
+   std::vector<double> effs = GetEfficiency(data, antidata, variable, signal,
+      cut, n, bins, &lerrs, &herrs); 
+
+   double x[n];
+   double y[n];
+   double xlerrs[n];
+   double xherrs[n];
+   double ylerrs[n];
+   double yherrs[n];
+   for(int i = 0; i < n; i++)
+   {
+      x[i] = (bins[i] + bins[i + 1]) / 2.0;
+      y[i] = effs[i];
+      xlerrs[i] = x[i] - bins[i];
+      xherrs[i] = xlerrs[i];
+      ylerrs[i] = lerrs[i];
+      yherrs[i] = herrs[i];
+   }
+   
+   return new TGraphAsymmErrors(n, x, y, xlerrs, xherrs, ylerrs, yherrs);
+}
+
 void DrawingToolsTPCECal::PlotEfficiency(DataSample& rdp, DataSample& mcp,
    const std::string& variable, const std::string& signal,
    const std::string& cut, const int numBins, double* bins, bool isAnti)
@@ -119,6 +147,30 @@ void DrawingToolsTPCECal::PlotEfficiency(DataSample& rdp, DataSample& mcp,
    std::vector<std::string> legend;
    legend.push_back(isAnti ? "#bar{#nu} Data" : "#nu Data");
    legend.push_back(isAnti ? "#bar{#nu} MC" : "#nu MC");
+   _multigraph = new TMultiGraph();
+   Plot(*_multigraph, *graph1, *graph2, "AP", legend);
+   gPad->Update();
+}
+
+void DrawingToolsTPCECal::PlotEfficiency(DataSample& rdp, DataSample& rdpbar,
+   DataSample& mcp, DataSample& mcpbar, const std::string& variable,
+   const std::string& signal, const std::string& cut, const int numBins,
+   double* bins)
+{
+   if(_multigraph)
+   {
+      delete _multigraph;
+      _multigraph = nullptr;
+   }
+
+   TGraphAsymmErrors* graph1 = CreateEfficiencyGraph(rdp, rdpbar, variable,
+      signal, cut, numBins, bins);
+   TGraphAsymmErrors* graph2 = CreateEfficiencyGraph(mcp, mcpbar, variable,
+      signal, cut, numBins, bins);
+
+   std::vector<std::string> legend;
+   legend.push_back("Data");
+   legend.push_back("MC");
    _multigraph = new TMultiGraph();
    Plot(*_multigraph, *graph1, *graph2, "AP", legend);
    gPad->Update();
