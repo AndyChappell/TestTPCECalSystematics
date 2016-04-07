@@ -113,14 +113,13 @@ public:
       \param cut  The cut.
       \param numBins The number of bins.
       \param bins The bin boundaries.
-      \param histogram  The histogram to be filled.
       \param options Root plotting options
-      \param legend  The legend.
+      \param isAnti  Indicates whether the data is from anti-neutrino-mode running.
    */
    void PlotSystematic(DataSample& rdp, DataSample& mcp,
       const std::string& variables, const std::string& signal,
-      const std::string& cut, int numBins, double* bins, TH1F& histogram,
-      const std::string& options = "", const std::string& legend = "");
+      const std::string& cut, int numBins, double* bins,
+      const std::string& options = "", bool isAnti=false);
 
    /**
       Calculates the 1D systematic uncertainty for combined nu and nubar samples.
@@ -134,15 +133,14 @@ public:
       \param cut  The cut.
       \param numBins The number of bins.
       \param bins The bin boundaries.
-      \param histogram  The histogram to be filled.
       \param options Root plotting options
       \param legend  The legend.
    */
    void PlotSystematic(DataSample& nuRdp, DataSample& nubarRdp,
       DataSample& nuMcp, DataSample& nubarMcp,
       const std::string& variables, const std::string& signal,
-      const std::string& cut, int numBins, double* bins, TH1F& histogram,
-      const std::string& options = "", const std::string& legend = "");
+      const std::string& cut, int numBins, double* bins,
+      const std::string& options = "");
 
    /**
       Draws a histogram.
@@ -215,7 +213,6 @@ protected:
    double _max;
    TMultiGraph* _multigraph;
    TH1F* _histogram1;
-   TH1F* _histogram2;
 };
 
 #endif

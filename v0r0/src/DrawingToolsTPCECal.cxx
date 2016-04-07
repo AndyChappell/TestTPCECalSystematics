@@ -44,7 +44,6 @@ DrawingToolsTPCECal::DrawingToolsTPCECal(const std::string& file,
    _range = false;
    _multigraph = nullptr;
    _histogram1 = nullptr;
-   _histogram2 = nullptr;
 }
 
 DrawingToolsTPCECal::DrawingToolsTPCECal(Experiment& exp, bool useT2Kstyle):
@@ -54,7 +53,6 @@ DrawingToolsTPCECal::DrawingToolsTPCECal(Experiment& exp, bool useT2Kstyle):
    _range = false;
    _multigraph = nullptr;
    _histogram1 = nullptr;
-   _histogram2 = nullptr;
 }
 
 DrawingToolsTPCECal::~DrawingToolsTPCECal()
@@ -66,10 +64,6 @@ DrawingToolsTPCECal::~DrawingToolsTPCECal()
    if(_histogram1)
    {
       delete _histogram1;
-   }
-   if(_histogram2)
-   {
-      delete _histogram2;
    }
 }
 
@@ -336,9 +330,16 @@ std::vector<double> DrawingToolsTPCECal::GetEfficiency(DataSample& data1,
 
 void DrawingToolsTPCECal::PlotSystematic(DataSample& rdp, DataSample& mcp,
    const std::string& variable, const std::string& signal,
-   const std::string& cut, int numBins, double* bins, TH1F& histogram,
-   const std::string& options, const std::string& legend)
+   const std::string& cut, int numBins, double* bins,
+   const std::string& options, bool isAnti)
 {
+   if(_histogram1)
+   {
+      delete _histogram1;
+      _histogram1 = nullptr;
+   }
+   _histogram1 = new TH1F("", "", numBins, bins);
+   
    std::vector<double> data_errs(numBins);
    std::vector<double> mc_errs(numBins);
 
@@ -349,52 +350,43 @@ void DrawingToolsTPCECal::PlotSystematic(DataSample& rdp, DataSample& mcp,
 
    for(int i = 0; i < numBins; i++)
    {
-/*      double systematic = GetSystematic(data_eff.at(i), mc_eff.at(i),
-         data_errs.at(i), mc_errs.at(i));
-
-      // Not -nan or inf
-      if(!isnan(systematic) && !isinf(systematic))
-      {
-         histogram.SetBinContent(i + 1, systematic);
-         // Don't want errors drawn to systematics plots.
-         histogram.SetBinError(i + 1, 0.0000001);
-      }
-      else
-      {
-         cout << "Error in bin " << bins[i] << " - " << bins[i + 1] <<
-            " inf or nan propagated!" << endl;
-         histogram.SetBinContent(i + 1, 0);
-         histogram.SetBinError(i + 1, 0.0000001);
-      }*/
       double systematic = GetSystematicUncertainty(data_eff.at(i), mc_eff.at(i));
       double error = GetSystematicError(data_errs.at(i), mc_errs.at(i));
 
       // Not -nan or inf
       if(!isnan(systematic) && !isinf(systematic))
       {
-         histogram.SetBinContent(i + 1, systematic);
-         histogram.SetBinError(i + 1, error);
+         _histogram1->SetBinContent(i + 1, systematic);
+         _histogram1->SetBinError(i + 1, error);
       }
       else
       {
          cout << "Error in bin " << bins[i] << " - " << bins[i + 1] <<
             " inf or nan propagated!" << endl;
-         histogram.SetBinContent(i + 1, 0);
-         histogram.SetBinError(i + 1, error);
+         _histogram1->SetBinContent(i + 1, 0);
+         _histogram1->SetBinError(i + 1, error);
       }
    }
 
-   histogram.SetMinimum(0);
-   Plot(histogram, options, legend);
+   _histogram1->SetMinimum(0);
+   std::string legend = isAnti ? "#bar{#nu}" : "#nu";
+   Plot(*_histogram1, options, legend);
    gPad->Update();
 }
 
 void DrawingToolsTPCECal::PlotSystematic(DataSample& nuRdp, DataSample& nubarRdp,
    DataSample& nuMcp, DataSample& nubarMcp,
    const std::string& variable, const std::string& signal,
-   const std::string& cut, int numBins, double* bins, TH1F& histogram,
-   const std::string& options, const std::string& legend)
+   const std::string& cut, int numBins, double* bins,
+   const std::string& options)
 {
+   if(_histogram1)
+   {
+      delete _histogram1;
+      _histogram1 = nullptr;
+   }
+   _histogram1 = new TH1F("", "", numBins, bins);
+   
    std::vector<double> data_errs(numBins);
    std::vector<double> mc_errs(numBins);
 
@@ -405,43 +397,26 @@ void DrawingToolsTPCECal::PlotSystematic(DataSample& nuRdp, DataSample& nubarRdp
 
    for(int i = 0; i < numBins; i++)
    {
-/*      double systematic = GetSystematic(data_eff.at(i), mc_eff.at(i),
-         data_errs.at(i), mc_errs.at(i));
-
-      // Not -nan or inf
-      if(!isnan(systematic) && !isinf(systematic))
-      {
-         histogram.SetBinContent(i + 1, systematic);
-         // Don't want errors drawn to systematics plots.
-         histogram.SetBinError(i + 1, 0.0000001);
-      }
-      else
-      {
-         cout << "Error in bin " << bins[i] << " - " << bins[i + 1] <<
-            " inf or nan propagated!" << endl;
-         histogram.SetBinContent(i + 1, 0);
-         histogram.SetBinError(i + 1, 0.0000001);
-      }*/
       double systematic = GetSystematicUncertainty(data_eff.at(i), mc_eff.at(i));
       double error = GetSystematicError(data_errs.at(i), mc_errs.at(i));
 
       // Not -nan or inf
       if(!isnan(systematic) && !isinf(systematic))
       {
-         histogram.SetBinContent(i + 1, systematic);
-         histogram.SetBinError(i + 1, error);
+         _histogram1->SetBinContent(i + 1, systematic);
+         _histogram1->SetBinError(i + 1, error);
       }
       else
       {
          cout << "Error in bin " << bins[i] << " - " << bins[i + 1] <<
             " inf or nan propagated!" << endl;
-         histogram.SetBinContent(i + 1, 0);
-         histogram.SetBinError(i + 1, error);
+         _histogram1->SetBinContent(i + 1, 0);
+         _histogram1->SetBinError(i + 1, error);
       }
    }
 
-   histogram.SetMinimum(0);
-   Plot(histogram, options, legend);
+   _histogram1->SetMinimum(0);
+   Plot(*_histogram1, options, "");
    gPad->Update();
 }
 

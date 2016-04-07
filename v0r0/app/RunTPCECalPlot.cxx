@@ -205,41 +205,13 @@ void DrawSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.SetTitleX(variable.GetDescription());
    draw.SetTitleY("Systematic Uncertainty");
    std::ostringstream ss;
-
-   TH1F histogram("", "", bins.GetNumBins(), bins.GetBoundaries());
+   
    draw.PlotSystematic(rdp, mcp, variable.GetMicrotreeVariable(),
       detector.GetSignal(), detector.GetCut(), bins.GetNumBins(),
-      bins.GetBoundaries(), histogram, "e1", 
-      (particle.GetName().find("bar") == std::string::npos) ? "#nu" : "#bar{#nu}");
+      bins.GetBoundaries(), "e1", particle.GetName().find("bar") == std::string::npos);
    ss << "syst_" << variable.GetName() << "_" << detector.GetName() << "_" <<
       particle.GetName() << ".png";
    c1->Print(ss.str().c_str(), "png");
-}
-
-void DrawDualSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
-   DataSample& rdp, DataSample& ardp, DataSample& mcp, DataSample& amcp,
-   const AnalysisVariable& variable, Bins& bins,
-   const Detector& detector, const Particle& particle)
-{
-   c1->Clear();
-   draw.SetLegendSize(0.12, 0.1);
-   draw.SetLegendPos("tr");
-   draw.SetTitleX(variable.GetDescription());
-   draw.SetTitleY("Systematic Uncertainty");
-   std::ostringstream ss;
-
-   TH1F histogram1("", "", bins.GetNumBins(), bins.GetBoundaries());
-   draw.PlotSystematic(rdp, mcp, variable.GetMicrotreeVariable(),
-      detector.GetSignal(), detector.GetCut(), bins.GetNumBins(),
-      bins.GetBoundaries(), histogram1, "e1", "#nu");
-   TH1F histogram2("", "", bins.GetNumBins(), bins.GetBoundaries());
-   draw.PlotSystematic(ardp, amcp, variable.GetMicrotreeVariable(),
-      detector.GetSignal(), detector.GetCut(), bins.GetNumBins(),
-      bins.GetBoundaries(), histogram2, "same", "#bar{#nu}");
-   ss << "syst_dual_" << variable.GetName() << "_" << detector.GetName() << "_" <<
-      particle.GetName() << ".png";
-   c1->Print(ss.str().c_str(), "png");
-   c1->Clear();
 }
 
 void DrawCombinedSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
@@ -253,10 +225,9 @@ void DrawCombinedSystematics(DrawingToolsTPCECal& draw, TCanvas* c1,
    draw.SetTitleY("Systematic Uncertainty");
    std::ostringstream ss;
 
-   TH1F histogram("", "", bins.GetNumBins(), bins.GetBoundaries());
    draw.PlotSystematic(nuRdp, nubarRdp, nuMcp, nubarMcp,
       variable.GetMicrotreeVariable(), detector.GetSignal(), detector.GetCut(),
-      bins.GetNumBins(), bins.GetBoundaries(), histogram, "e1", "");
+      bins.GetNumBins(), bins.GetBoundaries(), "e1");
    ss << "syst_" << variable.GetName() << "_" << detector.GetName() << "_" <<
       particle.GetName() << "like" << ".png";
    c1->Print(ss.str().c_str(), "png");
@@ -515,18 +486,6 @@ int main(int argc, char *argv[])
       DrawCombinedSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
          angle, dsAngBins[i], downstream, *(particle[i]));
       DrawCombinedSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         angle, brAngBins[i], barrel, *(particle[i]));
-
-      // Momentum systematics - dual plot
-      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         momentum, dsMomBins[i], downstream, *(particle[i]));
-      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         momentum, brMomBins[i], barrel, *(particle[i]));
-
-      // Track angle systematics - dual plot
-      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
-         angle, dsAngBins[i], downstream, *(particle[i]));
-      DrawDualSystematics(draw, c1, nuRdp, nubarRdp, nuMcp, nubarMcp,
          angle, brAngBins[i], barrel, *(particle[i]));
    }
 
